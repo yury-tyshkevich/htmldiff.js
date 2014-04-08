@@ -1,7 +1,7 @@
 # htmldiff.js
 ### HTML Diffing in JavaScript (ok, CoffeeScript actually.)
 
-[![Build Status](https://travis-ci.org/keanulee/htmldiff.js.svg?branch=master)](https://travis-ci.org/keanulee/htmldiff.js)
+[![Build Status](https://travis-ci.org/inkling/htmldiff.js.svg?branch=master)](https://travis-ci.org/inkling/htmldiff.js)
 
 `htmldiff.js` is a CoffeeScript port of https://github.com/myobie/htmldiff
 (This one has a few more tests.)
