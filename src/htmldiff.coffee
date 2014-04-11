@@ -15,7 +15,7 @@ isnt_tag = (token)-> not is_tag token
  *    null otherwise
 ###
 is_start_of_atomic_tag = (word)->
-  result = /^<(iframe|object|math|svg)/.exec word
+  result = /^<(iframe|object|math|svg|script)/.exec word
   result = result[1] if result
   return result
 
@@ -31,6 +31,26 @@ is_start_of_atomic_tag = (word)->
 ###
 is_end_of_atomic_tag = (word, tag)->
   (word.substring word.length - tag.length - 2) is "</#{tag}"
+
+###
+ * Checks if a tag is a void tag.
+ *
+ * @param {string} token The token to check.
+ *
+ * @return {boolean} True if the token is a void tag, false otherwise.
+###
+is_void_tag = (token) ->
+  /^\s*<[^>]+\/>\s*$/.test token
+
+###
+ * Checks if a token can be wrapped inside a tag.
+ *
+ * @param {string} token The token to check.
+ *
+ * @return {boolean} True if the token can be wrapped inside a tag, false otherwise.
+###
+is_wrappable = (token) ->
+  (isnt_tag token) or (is_start_of_atomic_tag token) or (is_void_tag token)
 
 class Match
   constructor: (@start_in_before, @start_in_after, @length)->
@@ -326,18 +346,19 @@ consecutive_where = (start, content, predicate)->
   return content[0..last_matching_index] if last_matching_index?
   return []
 
-wrap = (tag, content)->
+wrap = (tag, content, class_name)->
   rendering = ''
   position = 0
   length = content.length
 
   loop
     break if position >= length
-    non_tags = consecutive_where position, content, isnt_tag
+    non_tags = consecutive_where position, content, is_wrappable
     position += non_tags.length
     if non_tags.length isnt 0
       val = non_tags.join ''
-      rendering += "<#{tag}>#{val}</#{tag}>" if val.trim()
+      attrs = if class_name then " class=\"#{class_name}\"" else ''
+      rendering += "<#{tag}#{attrs}>#{val}</#{tag}>" if val.trim()
 
     break if position >= length
     tags = consecutive_where position, content, is_tag
@@ -347,29 +368,39 @@ wrap = (tag, content)->
   return rendering
 
 op_map =
-  equal: (op, before_tokens, after_tokens)->
+  equal: (op, before_tokens, after_tokens, class_name)->
     after_tokens[op.start_in_after..op.end_in_after].join ''
 
-  insert: (op, before_tokens, after_tokens)->
+  insert: (op, before_tokens, after_tokens, class_name)->
     val = after_tokens[op.start_in_after..op.end_in_after]
-    wrap 'ins', val
+    wrap 'ins', val, class_name
 
-  delete: (op, before_tokens, after_tokens)->
+  delete: (op, before_tokens, after_tokens, class_name)->
     val = before_tokens[op.start_in_before..op.end_in_before]
-    wrap 'del', val
+    wrap 'del', val, class_name
 
-op_map.replace = (op, before_tokens, after_tokens)->
-  (op_map.delete op, before_tokens, after_tokens) +
-  (op_map.insert op, before_tokens, after_tokens)
+op_map.replace = (op, before_tokens, after_tokens, class_name)->
+  (op_map.delete op, before_tokens, after_tokens, class_name) +
+  (op_map.insert op, before_tokens, after_tokens, class_name)
 
-render_operations = (before_tokens, after_tokens, operations)->
+render_operations = (before_tokens, after_tokens, operations, class_name)->
   rendering = ''
   for op in operations
-    rendering += op_map[op.action] op, before_tokens, after_tokens
+    rendering += op_map[op.action] op, before_tokens, after_tokens, class_name
 
   return rendering
 
-diff = (before, after)->
+###
+ * Compares two pieces of HTML content and returns the combined content with differences
+ * wrapped in <ins> and <del> tags.
+ *
+ * @param {string} before The HTML content before the changes.
+ * @param {string} after The HTML content after the changes.
+ * @param {string} class_name (Optional) The class attribute to include in <ins> and <del> tags.
+ *
+ * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
+###
+diff = (before, after, class_name)->
   return before if before is after
 
   before = html_to_tokens before
@@ -377,7 +408,7 @@ diff = (before, after)->
 
   ops = calculate_operations before, after
 
-  render_operations before, after, ops
+  render_operations before, after, ops, class_name
 
 
 diff.html_to_tokens = html_to_tokens
