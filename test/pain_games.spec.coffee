@@ -1,6 +1,6 @@
 describe 'Pain Games', ->
   beforeEach ->
-    @cut = require '../src/htmldiff.coffee'
+    @cut = require '../js/htmldiff'
 
   describe 'When an entire sentence is replaced', ->
     beforeEach ->

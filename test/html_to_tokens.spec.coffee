@@ -1,6 +1,6 @@
 describe 'html_to_tokens', ->
   beforeEach ->
-    @cut = (require '../src/htmldiff.coffee').html_to_tokens
+    @cut = (require '../js/htmldiff').html_to_tokens
 
   it 'should be a function', ->
     (expect @cut).is.a 'function'

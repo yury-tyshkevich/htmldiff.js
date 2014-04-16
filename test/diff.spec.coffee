@@ -1,6 +1,6 @@
 describe 'Diff', ->
   beforeEach ->
-    @cut = require '../src/htmldiff.coffee'
+    @cut = require '../js/htmldiff'
 
   describe 'When both inputs are the same', ->
     beforeEach ->

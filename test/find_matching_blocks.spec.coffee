@@ -1,11 +1,10 @@
 describe 'find_matching_blocks', ->
   beforeEach ->
-    @diff = require '../src/htmldiff.coffee'
+    @diff = require '../js/htmldiff'
 
   describe 'index_tokens', ->
     beforeEach ->
-      @cut = (require '../src/htmldiff.coffee')
-        .find_matching_blocks.create_index
+      @cut = @diff.find_matching_blocks.create_index
 
     it 'should be a function', ->
       (expect @cut).is.a 'function'

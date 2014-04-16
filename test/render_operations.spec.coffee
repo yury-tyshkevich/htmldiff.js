@@ -1,6 +1,6 @@
 describe 'render_operations', ->
   beforeEach ->
-    diff = (require '../src/htmldiff.coffee')
+    diff = (require '../js/htmldiff')
     @cut = (before, after)->
       ops = diff.calculate_operations before, after
       diff.render_operations before, after, ops
