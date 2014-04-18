@@ -1,4 +1,4 @@
-// calculates the differences into a list of edit operations
+// Calculates the differences into a list of edit operations.
 describe('calculate_operations', function(){
   var cut, res;
 
@@ -12,7 +12,6 @@ describe('calculate_operations', function(){
 
   describe('Actions', function(){
     describe('In the middle', function(){
-
       describe('Replace', function(){
         beforeEach(function(){
           var before = 'working on it'.split(' ');
@@ -122,7 +121,6 @@ describe('calculate_operations', function(){
     }); // describe('In the middle')
 
     describe('At the beginning', function(){
-
       describe('Replace', function(){
         beforeEach(function(){
           var before = 'I dont like veggies'.split(' ');

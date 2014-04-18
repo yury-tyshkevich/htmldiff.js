@@ -3,8 +3,8 @@
 
 [![Build Status](https://travis-ci.org/keanulee/htmldiff.js.svg?branch=master)](https://travis-ci.org/keanulee/htmldiff.js)
 
-`htmldiff.js` is a JavaScript port of https://github.com/myobie/htmldiff
-(This one has a few more tests.)
+`htmldiff.js` is a JavaScript port of [https://github.com/myobie/htmldiff](https://github.com/myobie/htmldiff) by
+[Keanu Lee](http://keanulee.com) at [Inkling](https://www.inkling.com/).
 
 This is diffing that understands HTML. Best suited for cases when you
 want to show a diff of user-generated HTML (like from a wysiwyg editor).

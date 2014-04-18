@@ -67,7 +67,7 @@
 
   /*
    * Checks if the current word is the end of an atomic tag (i.e. it has all the characters,
-   * except for the end bracket of the closing tag, such as "<iframe></iframe").
+   * except for the end bracket of the closing tag, such as '<iframe></iframe').
    *
    * @param {string} word The characters of the current token read so far.
    * @param {string} tag The ending tag to look for.
@@ -76,7 +76,7 @@
    *    false otherwise.
    */
   function is_end_of_atomic_tag(word, tag){
-    return word.substring(word.length - tag.length - 2) === ("</" + tag);
+    return word.substring(word.length - tag.length - 2) === ('</' + tag);
   }
 
   /*
@@ -129,7 +129,7 @@
     var current_word = '';
     var current_atomic_tag = '';
     var words = [];
-    for (var i = 0; i < html.length; ++i){
+    for (var i = 0; i < html.length; i++){
       var char = html[i];
       switch (mode){
         case 'tag':
@@ -206,7 +206,7 @@
           }
           break;
         default:
-          throw new Error("Unknown mode " + mode);
+          throw new Error('Unknown mode ' + mode);
       }
     }
     if (current_word){
@@ -228,7 +228,7 @@
   function get_key_for_token(token){
     var tag_name = /<([^\s>]+)[\s>]/.exec(token);
     if (tag_name){
-      return "<" + (tag_name[1].toLowerCase()) + ">";
+      return '<' + (tag_name[1].toLowerCase()) + '>';
     }
     if (token){
       return token.replace(/(\s+|&nbsp;|&#160;)/g, ' ');
@@ -256,12 +256,12 @@
     var best_match_in_after = start_in_after;
     var best_match_length = 0;
     var match_length_at = {};
-    for (var index_in_before = start_in_before; index_in_before < end_in_before; ++index_in_before){
+    for (var index_in_before = start_in_before; index_in_before < end_in_before; index_in_before++){
       var new_match_length_at = {};
       var looking_for = get_key_for_token(before_tokens[index_in_before]);
       var locations_in_after = index_of_before_locations_in_after_tokens[looking_for];
 
-      for (var i = 0; i < locations_in_after.length; ++i){
+      for (var i = 0; i < locations_in_after.length; i++){
         var index_in_after = locations_in_after[i];
         if (index_in_after < start_in_after) continue;
         if (index_in_after >= end_in_after) break;
@@ -341,7 +341,7 @@
       return get_key_for_token(token);
     });
     var index = {};
-    for (var i = 0; i < queries.length; ++i){
+    for (var i = 0; i < queries.length; i++){
       var query = queries[i];
       index[query] = [];
       var idx = results.indexOf(query);
@@ -408,7 +408,7 @@
     var matches = find_matching_blocks(before_tokens, after_tokens);
     matches.push(new Match(before_tokens.length, after_tokens.length, 0));
 
-    for (var index = 0; index < matches.length; ++index){
+    for (var index = 0; index < matches.length; index++){
       var match = matches[index];
       var match_starts_at_current_position_in_before = position_in_before === match.start_in_before;
       var match_starts_at_current_position_in_after = position_in_after === match.start_in_after;
@@ -450,7 +450,7 @@
       return /^\s$/.test(before_tokens.slice(op.start_in_before, op.end_in_before + 1));
     }
 
-    for (var i = 0; i < operations.length; ++i){
+    for (var i = 0; i < operations.length; i++){
       var op = operations[i];
 
       if ((is_single_whitespace(op) && last_op.action === 'replace') || (op.action === 'replace' && last_op.action === 'replace')){
@@ -478,7 +478,7 @@
     content = content.slice(start, content.length + 1);
     var last_matching_index = null;
 
-    for (var index = 0; index < content.length; ++index){
+    for (var index = 0; index < content.length; index++){
       var token = content[index];
       var answer = predicate(token);
 
@@ -515,9 +515,9 @@
       position += non_tags.length;
       if (non_tags.length !== 0){
         var val = non_tags.join('');
-        var attrs = class_name ? " class=\"" + class_name + "\"" : '';
+        var attrs = class_name ? ' class="' + class_name + '"' : '';
         if (val.trim()){
-          rendering += "<" + tag + attrs + ">" + val + "</" + tag + ">";
+          rendering += '<' + tag + attrs + '>' + val + '</' + tag + '>';
         }
       }
 
@@ -547,10 +547,10 @@
    * @return {string} The rendering of that operation.
    */
   var op_map = {
-    equal: function(op, before_tokens, after_tokens, class_name){
+    'equal': function(op, before_tokens, after_tokens, class_name){
       return after_tokens.slice(op.start_in_after, op.end_in_after + 1).join('');
     },
-    insert: function(op, before_tokens, after_tokens, class_name){
+    'insert': function(op, before_tokens, after_tokens, class_name){
       var val = after_tokens.slice(op.start_in_after, op.end_in_after + 1);
       return wrap('ins', val, class_name);
     },
@@ -585,7 +585,7 @@
    */
   function render_operations(before_tokens, after_tokens, operations, class_name){
     var rendering = '';
-    for (var i = 0; i < operations.length; ++i){
+    for (var i = 0; i < operations.length; i++){
       var op = operations[i];
       rendering += op_map[op.action](op, before_tokens, after_tokens, class_name);
     }
@@ -623,7 +623,7 @@
     define([], function(){
       return diff;
     });
-  } else if (typeof module !== "undefined" && module !== null){
+  } else if (typeof module !== 'undefined' && module !== null){
     module.exports = diff;
   } else {
     this.htmldiff = diff;

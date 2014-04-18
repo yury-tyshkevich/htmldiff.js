@@ -11,19 +11,19 @@ describe('The specs from the ruby source project', function(){
       'is <del>here</del><ins>there</ins>');
   });
 
-  it("should insert a letter and a space", function(){
+  it('should insert a letter and a space', function(){
     var diff = cut('a c', 'a b c');
-    expect(diff).equal("a <ins>b </ins>c");
+    expect(diff).equal('a <ins>b </ins>c');
   });
 
-  it("should remove a letter and a space", function(){
+  it('should remove a letter and a space', function(){
     var diff = cut('a b c', 'a c');
-    diff.should == "a <del>b </del>c";
+    diff.should == 'a <del>b </del>c';
   });
 
-  it("should change a letter", function(){
+  it('should change a letter', function(){
     var diff = cut('a b c', 'a d c');
-    expect(diff).equal("a <del>b</del>" +
-      "<ins>d</ins> c");
+    expect(diff).equal('a <del>b</del>' +
+      '<ins>d</ins> c');
   });
 }); // describe('The specs from the ruby source project')
