@@ -1,10 +1,10 @@
 # htmldiff.js
-### HTML Diffing in JavaScript (ok, CoffeeScript actually.)
+### HTML Diffing in JavaScript
 
 [![Build Status](https://travis-ci.org/inkling/htmldiff.js.svg?branch=master)](https://travis-ci.org/inkling/htmldiff.js)
 
-`htmldiff.js` is a CoffeeScript port of https://github.com/myobie/htmldiff
-(This one has a few more tests.)
+`htmldiff.js` is a JavaScript port of [https://github.com/myobie/htmldiff](https://github.com/myobie/htmldiff) by
+[Keanu Lee](http://keanulee.com) at [Inkling](https://www.inkling.com/).
 
 This is diffing that understands HTML. Best suited for cases when you
 want to show a diff of user-generated HTML (like from a wysiwyg editor).
@@ -12,10 +12,10 @@ want to show a diff of user-generated HTML (like from a wysiwyg editor).
 ##Usage
 You use it like this:
 
-```coffeescript
+```javascript
 
-  diff = require 'htmldiff.js'
-  console.log diff '<p>this is some text</p>', '<p>this is some more text</p>'
+  diff = require('htmldiff.js');
+  console.log(diff('<p>this is some text</p>', '<p>this is some more text</p>'));
 ```
 And you get:
 
