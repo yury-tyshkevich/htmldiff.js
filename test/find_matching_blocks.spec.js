@@ -16,10 +16,7 @@ describe('find_matching_blocks', function(){
 
     describe('When the items exist in the search target', function(){
       beforeEach(function(){
-        res = cut({
-          find_these: ['a', 'has'],
-          in_these: ['a', 'apple', 'has', 'a', 'worm']
-        });
+        res = cut(['a', 'apple', 'has', 'a', 'worm']);
       });
 
       it('should find "a" twice', function(){
@@ -46,10 +43,7 @@ describe('find_matching_blocks', function(){
     beforeEach(function(){
       cut = diff.find_matching_blocks.find_match;
       invoke = function(before, after){
-        var index = diff.find_matching_blocks.create_index({
-          find_these: before,
-          in_these: after
-        });
+        var index = diff.find_matching_blocks.create_index(after);
 
         res = cut(before, after, index, 0, before.length, 0, after.length);
       };

@@ -259,7 +259,7 @@
     for (var index_in_before = start_in_before; index_in_before < end_in_before; index_in_before++){
       var new_match_length_at = {};
       var looking_for = get_key_for_token(before_tokens[index_in_before]);
-      var locations_in_after = index_of_before_locations_in_after_tokens[looking_for];
+      var locations_in_after = index_of_before_locations_in_after_tokens[looking_for] || [];
 
       for (var i = 0; i < locations_in_after.length; i++){
         var index_in_after = locations_in_after[i];
@@ -321,36 +321,23 @@
    * Creates an index (A.K.A. hash table) that will be used to match the list of before
    * tokens with the list of after tokens.
    *
-   * @param {Object} options An object with the following:
-   *    - {Array.<string>} find_these The list of tokens that will be used to search.
-   *    - {Array.<string>} in_these The list of tokens that will be returned.
+   * @param {Array.<string>} in_these The list of tokens that will be returned.
    *
    * @return {Object} An index that can be used to search for tokens.
    */
-  function create_index(options){
-    if (!options.find_these){
-      throw new Error('params must have find_these key');
-    }
-    if (!options.in_these){
-      throw new Error('params must have in_these key');
-    }
-    var queries = options.find_these.map(function(token){
+  function create_index(in_these){
+    var results = in_these.map(function(token){
       return get_key_for_token(token);
     });
-    var results = options.in_these.map(function(token){
-      return get_key_for_token(token);
-    });
-    var index = {};
-    for (var i = 0; i < queries.length; i++){
-      var query = queries[i];
-      index[query] = [];
-      var idx = results.indexOf(query);
-      while (idx !== -1){
-        index[query].push(idx);
-        idx = results.indexOf(query, idx + 1);
-      }
+
+    var items = {};
+    for (var i = 0; i < results.length; i++){
+      var item = results[i];
+      var list = items[item] || (items[item] = []);
+      list.push(i);
     }
-    return index;
+
+    return items;
   }
 
   /*
@@ -364,10 +351,7 @@
    */
   function find_matching_blocks(before_tokens, after_tokens){
     var matching_blocks = [];
-    var index_of_before_locations_in_after_tokens = create_index({
-      find_these: before_tokens,
-      in_these: after_tokens
-    });
+    var index_of_before_locations_in_after_tokens = create_index(after_tokens);
     return recursively_find_matching_blocks(before_tokens, after_tokens, index_of_before_locations_in_after_tokens, 0, before_tokens.length, 0, after_tokens.length, matching_blocks);
   }
 
