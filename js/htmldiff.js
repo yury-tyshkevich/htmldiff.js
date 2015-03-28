@@ -27,6 +27,8 @@
  *   == '<p>this is some <ins class="diff-class">more </ins>text</p>'
  */
 (function(){
+  "use strict";
+
   function is_end_of_tag(char){
     return char === '>';
   }
