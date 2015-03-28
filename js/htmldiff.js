@@ -268,10 +268,7 @@
         if (index_in_after < start_in_after) continue;
         if (index_in_after >= end_in_after) break;
 
-        if (!match_length_at[index_in_after - 1]){
-          match_length_at[index_in_after - 1] = 0;
-        }
-        var new_match_length = match_length_at[index_in_after - 1] + 1;
+        var new_match_length = (match_length_at[index_in_after - 1] | 0) + 1;
         new_match_length_at[index_in_after] = new_match_length;
 
         if (new_match_length > best_match_length){
