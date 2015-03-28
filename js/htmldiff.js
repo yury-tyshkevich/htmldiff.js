@@ -254,8 +254,8 @@
    * @return {Match} A Match that describes the best matching block in the given range.
    */
   function find_match(before_tokens, after_tokens, index_of_before_locations_in_after_tokens, start_in_before, end_in_before, start_in_after, end_in_after){
-    var best_match_in_before = start_in_before;
-    var best_match_in_after = start_in_after;
+    var best_match_index_in_before = start_in_before;
+    var best_match_index_in_after = start_in_after;
     var best_match_length = 0;
     var match_length_at = {};
     for (var index_in_before = start_in_before; index_in_before < end_in_before; index_in_before++){
@@ -275,15 +275,15 @@
         new_match_length_at[index_in_after] = new_match_length;
 
         if (new_match_length > best_match_length){
-          best_match_in_before = index_in_before - new_match_length + 1;
-          best_match_in_after = index_in_after - new_match_length + 1;
+          best_match_index_in_before = index_in_before;
+          best_match_index_in_after = index_in_after;
           best_match_length = new_match_length;
         }
       }
       match_length_at = new_match_length_at;
     }
     if (best_match_length !== 0){
-      return new Match(best_match_in_before, best_match_in_after, best_match_length);
+      return new Match(best_match_index_in_before - best_match_length + 1, best_match_index_in_after - best_match_length + 1, best_match_length);
     }
     return null;
   }
