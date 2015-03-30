@@ -1,8 +1,16 @@
 describe('render_operations', function(){
-  var cut, res;
+  var cut, res, create_token, tokenize;
 
   beforeEach(function(){
     var diff = require('../js/htmldiff');
+    create_token = diff.find_matching_blocks.create_token;
+
+    tokenize = function(tokens) {
+      return tokens.map(function(token) {
+        return create_token(token);
+      });
+    };
+
     cut = function(before, after){
       var ops = diff.calculate_operations(before, after);
       return diff.render_operations(before, after, ops);
@@ -15,7 +23,7 @@ describe('render_operations', function(){
 
   describe('equal', function(){
     beforeEach(function(){
-      var before = ['this', ' ', 'is', ' ', 'a', ' ', 'test'];
+      var before = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'test']);
       res = cut(before, before);
     });
 
@@ -26,8 +34,8 @@ describe('render_operations', function(){
 
   describe('insert', function(){
     beforeEach(function(){
-      before = ['this', ' ', 'is'];
-      after = ['this', ' ', 'is', ' ', 'a', ' ', 'test'];
+      before = tokenize(['this', ' ', 'is']);
+      after = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'test']);
       res = cut(before, after);
     });
 
@@ -39,9 +47,9 @@ describe('render_operations', function(){
 
   describe('delete', function(){
     beforeEach(function(){
-      var before = ['this', ' ', 'is', ' ', 'a', ' ', 'test',
-        ' ', 'of', ' ', 'stuff'];
-      var after = ['this', ' ', 'is', ' ', 'a', ' ', 'test'];
+      var before = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'test',
+        ' ', 'of', ' ', 'stuff']);
+      var after = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'test']);
       res = cut(before, after);
     });
 
@@ -53,8 +61,8 @@ describe('render_operations', function(){
 
   describe('replace', function(){
     beforeEach(function(){
-      var before = ['this', ' ', 'is', ' ', 'a', ' ', 'break'];
-      var after = ['this', ' ', 'is', ' ', 'a', ' ', 'test'];
+      var before = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'break']);
+      var after = tokenize(['this', ' ', 'is', ' ', 'a', ' ', 'test']);
       res = cut(before, after);
     });
 
@@ -65,8 +73,8 @@ describe('render_operations', function(){
 
   describe('Dealing with tags', function(){
     beforeEach(function(){
-      var before = ['<p>', 'a', '</p>'];
-      var after = ['<p>', 'a', ' ', 'b', '</p>', '<p>', 'c', '</p>'];
+      var before = tokenize(['<p>', 'a', '</p>']);
+      var after = tokenize(['<p>', 'a', ' ', 'b', '</p>', '<p>', 'c', '</p>']);
       res = cut(before, after);
     });
 
@@ -76,8 +84,8 @@ describe('render_operations', function(){
 
     describe('When there is a change at the beginning, in a <p>', function(){
       beforeEach(function(){
-        var before = ['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>'];
-        var after = ['<p>', 'I', ' ', 'is', ' ', 'awesome', '</p>'];
+        var before = tokenize(['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>']);
+        var after = tokenize(['<p>', 'I', ' ', 'is', ' ', 'awesome', '</p>']);
         res = cut(before, after);
       });
 
@@ -89,8 +97,8 @@ describe('render_operations', function(){
 
   describe('empty tokens', function(){
     it('should not be wrapped', function(){
-      var before = ['text'];
-      var after = ['text', ' '];
+      var before = tokenize(['text']);
+      var after = tokenize(['text', ' ']);
 
       res = cut(before, after);
 
@@ -100,8 +108,8 @@ describe('render_operations', function(){
 
   describe('tags with attributes', function(){
     it('should treat attribute changes as equal and output the after tag', function(){
-      var before = ['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>'];
-      var after = ['<p style="margin: 2px;" class="after">', 'this', ' ', 'is', ' ', 'awesome', '</p>'];
+      var before = tokenize(['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>']);
+      var after = tokenize(['<p style="margin: 2px;" class="after">', 'this', ' ', 'is', ' ', 'awesome', '</p>']);
 
       res = cut(before, after);
 
@@ -109,8 +117,8 @@ describe('render_operations', function(){
     });
 
     it('should show changes within tags with different attributes', function(){
-      var before = ['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>'];
-      var after = ['<p style="margin: 2px;" class="after">', 'that', ' ', 'is', ' ', 'awesome', '</p>'];
+      var before = tokenize(['<p>', 'this', ' ', 'is', ' ', 'awesome', '</p>']);
+      var after = tokenize(['<p style="margin: 2px;" class="after">', 'that', ' ', 'is', ' ', 'awesome', '</p>']);
 
       res = cut(before, after);
 
@@ -121,8 +129,8 @@ describe('render_operations', function(){
 
   describe('wrappable tags', function(){
     it('should wrap void tags', function(){
-      var before = ['old', ' ', 'text'];
-      var after = ['new', '<br/>', ' ', 'text'];
+      var before = tokenize(['old', ' ', 'text']);
+      var after = tokenize(['new', '<br/>', ' ', 'text']);
 
       res = cut(before, after);
 
@@ -130,8 +138,8 @@ describe('render_operations', function(){
     });
 
     it('should wrap atomic tags', function(){
-      var before = ['old', '<iframe src="source.html"></iframe>', ' ', 'text'];
-      var after = ['new', ' ', 'text'];
+      var before = tokenize(['old', '<iframe src="source.html"></iframe>', ' ', 'text']);
+      var after = tokenize(['new', ' ', 'text']);
 
       res = cut(before, after);
 

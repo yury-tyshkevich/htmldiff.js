@@ -1,8 +1,16 @@
 describe('find_matching_blocks', function(){
-  var diff, cut, res;
+  var diff, cut, res, create_token, tokenize, create_segment, html_to_tokens;
 
   beforeEach(function(){
     diff = require('../js/htmldiff');
+    create_segment = diff.find_matching_blocks.create_segment;
+    html_to_tokens = diff.html_to_tokens;
+    create_token = diff.find_matching_blocks.create_token;
+    tokenize = function(tokens) {
+      return tokens.map(function(token) {
+        return create_token(token);
+      });
+    };
   });
 
   describe('index_tokens', function(){
@@ -16,7 +24,7 @@ describe('find_matching_blocks', function(){
 
     describe('When the items exist in the search target', function(){
       beforeEach(function(){
-        res = cut(['a', 'apple', 'has', 'a', 'worm']);
+        res = cut(tokenize(['a', 'apple', 'has', 'a', 'worm']));
       });
 
       it('should find "a" twice', function(){
@@ -41,18 +49,18 @@ describe('find_matching_blocks', function(){
     var invoke;
 
     beforeEach(function(){
-      cut = diff.find_matching_blocks.find_match;
+      cut = diff.find_matching_blocks.find_best_match;
       invoke = function(before, after){
-        var index = diff.find_matching_blocks.create_index(after);
+        var segment = create_segment(before, after, 0, 0);
 
-        res = cut(before, after, index, 0, before.length, 0, after.length);
+        res = cut(segment);
       };
     });
 
     describe('When there is a match', function(){
       beforeEach(function(){
-        var before = ['a', 'dog', 'bites'];
-        var after = ['a', 'dog', 'bites', 'a', 'man'];
+        var before = tokenize(['a', 'dog', 'bites']);
+        var after = tokenize(['a', 'dog', 'bites', 'a', 'man']);
         invoke(before, after);
       });
 
@@ -67,8 +75,8 @@ describe('find_matching_blocks', function(){
 
       describe('When the match is surrounded', function(){
         beforeEach(function(){
-          before = ['dog', 'bites']
-          after = ['the', 'dog', 'bites', 'a', 'man']
+          before = tokenize(['dog', 'bites']);
+          after = tokenize(['the', 'dog', 'bites', 'a', 'man']);
           invoke(before, after);
         });
 
@@ -82,10 +90,10 @@ describe('find_matching_blocks', function(){
       }); // describe('When the match is surrounded')
     }); // describe('When there is a match')
 
-    describe('When these is no match', function(){
+    describe('When there is no match', function(){
       beforeEach(function(){
-        var before = ['the', 'rat', 'sqeaks'];
-        var after = ['a', 'dog', 'bites', 'a', 'man'];
+        var before = tokenize(['the', 'rat', 'sqeaks']);
+        var after = tokenize(['a', 'dog', 'bites', 'a', 'man']);
         invoke(before, after);
       });
 
@@ -96,6 +104,8 @@ describe('find_matching_blocks', function(){
   }); // describe('find_match')
 
   describe('find_matching_blocks', function(){
+    var segment;
+
     beforeEach(function(){
       cut = diff.find_matching_blocks;
     });
@@ -106,9 +116,11 @@ describe('find_matching_blocks', function(){
 
     describe('When called with a single match', function(){
       beforeEach(function(){
-        var before = 'a dog bites'.split(' ');
-        var after = 'when a dog bites it hurts'.split(' ');
-        res = cut(before, after);
+        var before = html_to_tokens('a dog bites');
+        var after = html_to_tokens('when a dog bites it hurts');
+        segment = create_segment(before, after, 0, 0);
+
+        res = cut(segment);
       });
 
       it('should return a match', function(){
@@ -118,9 +130,10 @@ describe('find_matching_blocks', function(){
 
     describe('When called with multiple matches', function(){
       beforeEach(function(){
-        before = 'the dog bit a man'.split(' ');
-        after = 'the large brown dog bit a tall man'.split(' ');
-        res = cut(before, after);
+        var before = html_to_tokens('the dog bit a man');
+        var after = html_to_tokens('the large brown dog bit a tall man');
+        segment = create_segment(before, after, 0, 0);
+        res = cut(segment);
       });
 
       it('should return 3 matches', function(){
@@ -128,33 +141,27 @@ describe('find_matching_blocks', function(){
       });
 
       it('should match "the"', function(){
-        expect(res[0]).eql({
-          start_in_before: 0,
-          start_in_after: 0,
-          end_in_before: 0,
-          end_in_after: 0,
-          length: 1
-        });
+        expect(res[0].start_in_before).eql(0);
+        expect(res[0].start_in_after).eql(0);
+        expect(res[0].end_in_before).eql(0);
+        expect(res[0].end_in_after).eql(0);
+        expect(res[0].length).eql(1);
       });
 
       it('should match "dog bit a"', function(){
-        expect(res[1]).eql({
-          start_in_before: 1,
-          start_in_after: 3,
-          end_in_before: 3,
-          end_in_after: 5,
-          length: 3
-        });
+        expect(res[1].start_in_before).eql(1);
+        expect(res[1].start_in_after).eql(5);
+        expect(res[1].end_in_before).eql(7);
+        expect(res[1].end_in_after).eql(11);
+        expect(res[1].length).eql(7);
       });
 
       it('should match "man"', function(){
-        expect(res[2]).eql({
-          start_in_before: 4,
-          start_in_after: 7,
-          end_in_before: 4,
-          end_in_after: 7,
-          length: 1
-        });
+        expect(res[2].start_in_before).eql(8);
+        expect(res[2].start_in_after).eql(14);
+        expect(res[2].end_in_before).eql(8);
+        expect(res[2].end_in_after).eql(14);
+        expect(res[2].length).eql(1);
       });
     }); // describe('When called with multiple matches')
   }); // describe('find_matching_blocks')
