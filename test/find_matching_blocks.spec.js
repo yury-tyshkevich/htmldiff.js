@@ -98,8 +98,7 @@ describe('find_matching_blocks', function(){
       });
 
       it('should return nothing', function(){
-        expect(res).to.exist;
-        expect(res.length).to.equal(0);
+        expect(res).to.not.exist;
       });
     }); // describe('When these is no match')
   }); // describe('find_match')

@@ -26,6 +26,8 @@
  *   == '<p>this is some <ins class="diff-class">more </ins>text</p>'
  */
 (function(){
+  "use strict";
+
   function is_end_of_tag(char){
     return char === '>';
   }
@@ -101,18 +103,18 @@
   }
 
   /**
-   * Creates a token that holds a string and key representation. The key is used for diffing 
+   * Creates a token that holds a string and key representation. The key is used for diffing
    * comparisons and the string is used to recompose the document after the diff is complete.
-   * 
+   *
    * @param {string} current_word The section of the document to create a token for.
-   * 
+   *
    * @return {Object} A token object with a string and key property.
    */
   function create_token(current_word) {
     return {
       string: current_word,
       key: get_key_for_token(current_word)
-    }
+    };
   }
 
   /*
@@ -122,20 +124,21 @@
    * @param {number} start_in_before The index of the first token in the list of before tokens.
    * @param {number} start_in_after The index of the first token in the list of after tokens.
    * @param {number} length The number of consecutive matching tokens in this block.
+   * @param {Segment} segment The segment where the match was found.
    */
   function Match(start_in_before, start_in_after, length, segment){
     this.segment = segment;
+    this.length = length;
+
     this.start_in_before = start_in_before + segment.before_index;
     this.start_in_after = start_in_after + segment.after_index;
-    this.length = length;
+    this.end_in_before = this.start_in_before + this.length - 1;
+    this.end_in_after = this.start_in_after + this.length - 1;
     
     this.segment_start_in_before = start_in_before;
     this.segment_start_in_after = start_in_after;
     this.segment_end_in_before = (this.segment_start_in_before + this.length) - 1;
     this.segment_end_in_after = (this.segment_start_in_after + this.length) - 1;
-
-    this.end_in_before = segment.before_index + this.segment_end_in_before;
-    this.end_in_after = segment.after_index + this.segment_end_in_after;
   }
 
   /*
@@ -286,10 +289,10 @@
    * Compares two match objects to determine if the second match object comes before or after the
    * first match object. Returns -1 if the m2 should come before m1. Returns 1 if m1 should come
    * before m2. If the two matches criss-cross each other, a null is returned.
-   * 
+   *
    * @param {Match} m1 The first match object to compare.
    * @param {Match} m2 The second match object to compare.
-   * 
+   *
    * @return {number|null} Returns -1 if the m2 should come before m1. Returns 1 if m1 should come
    *    before m2. If the two matches criss-cross each other, a null is returned.
    */
@@ -305,8 +308,8 @@
 
   /**
    * A constructor for a binary search tree used to keep match objects in the proper order as
-   * they're found. 
-   * 
+   * they're found.
+   *
    * @constructor
    */
   function MatchBinarySearchTree() {
@@ -316,7 +319,7 @@
   MatchBinarySearchTree.prototype = {
     /**
      * Adds matches to the binary search tree.
-     * 
+     *
      * @param {Match} value The match to add to the binary search tree.
      */
     add: function (value){
@@ -361,8 +364,8 @@
     },
 
     /**
-     * Converts the binary search tree into an array using a depth-first traversal. 
-     * 
+     * Converts the binary search tree into an array using a depth-first traversal.
+     *
      * @return {Array.<Match>} An array containing the matches in the binary search tree.
      */
     to_array: function(){
@@ -371,7 +374,7 @@
       function depth_first(node) {
         if (node) {
           if (node.left) {
-            depth_first(node.left)
+            depth_first(node.left);
           }
 
           nodes.push(node.value);
@@ -389,7 +392,7 @@
 
 
   /*
-   * Finds and returns the best match between the before and after arrays contained in the segment 
+   * Finds and returns the best match between the before and after arrays contained in the segment
    * provided.
    *
    * @param {Segment} segment The segment in which to look for a match.
@@ -398,18 +401,18 @@
    */
   function find_best_match(segment){
     var before_tokens = segment.before_tokens;
-    var after_tokens = segment.after_tokens;
-    var before_map = segment.before_map;
     var after_map = segment.after_map;
     var last_space = null;
-    var best_match = new Match(0, 0, 0, segment);
+    var best_match = null;
 
     // Iterate through the entirety of the before_tokens to find the best match.
     for (var before_index = 0; before_index < before_tokens.length; before_index++){
+      var look_behind = false;
+
       // If the current best match is longer than the remaining tokens, we can bail because we
       // won't find a better match.
       var remaining_tokens = before_tokens.length - before_index;
-      if (remaining_tokens < best_match.length) {
+      if (best_match && remaining_tokens < best_match.length) {
         break;
       }
 
@@ -423,6 +426,12 @@
         continue;
       }
 
+      // Check to see if we just skipped a space, if so, we'll ask get_full_match to look behind
+      // by one token to see if it can include the whitespace.
+      if (last_space === before_index - 1) {
+        look_behind = true;
+      }
+
       // If the current token is not found in the after_tokens, it won't match and we can move on.
       var after_token_locations = after_map[before_token.key];
       if(!after_token_locations) {
@@ -432,21 +441,14 @@
       // For each instance of the current token in after_tokens, let's see how big of a match we can
       // build.
       after_token_locations.forEach(function(after_index) {
-
-        // Check to see if we just skipped a space, if so, we'll ask get_full_match to look behind
-        // by one token to see if it can include the whitespace.
-        var look_behind = false;
-        if (last_space === before_index - 1) {
-          look_behind = true;
-        }
-
         // get_full_match will see how far the current token match will go in both before_tokens
         // and after_tokens.
-        var match = get_full_match(segment, before_index, after_index, best_match.length, 
+        var best_match_length = best_match ? best_match.length : 0;
+        var match = get_full_match(segment, before_index, after_index, best_match_length,
           look_behind);
 
         // If we got a new best match, we'll save it aside.
-        if (match && match.length > best_match.length) {
+        if (match && match.length > best_match_length) {
           best_match = match;
         }
       });
@@ -459,14 +461,14 @@
   /**
    * Takes the start of a match, and expands it in the before_tokens and after_tokens of the
    * current segment as far as it can go.
-   * 
+   *
    * @param {Segment} segment The segment object to search within when expanding the match.
    * @param {number} before_start The offset within before_tokens to start looking.
    * @param {number} after_start The offset within after_tokens to start looking.
    * @param {number} min_length The minimum length match that must be found.
    * @param {boolean} look_behind If true, attempt to match a whitespace token just before the
    *    before_start and after_start tokens.
-   * 
+   *
    * @return {Match} The full match.
    */
   function get_full_match(segment, before_start, after_start, min_length, look_behind) {
@@ -489,7 +491,7 @@
         return;
       }
     }
-    
+
     // Extend the current match as far foward as it can go, without overflowing before_tokens or
     // after_tokens.
     var searching = true;
@@ -510,7 +512,7 @@
     }
 
     // If we've been asked to look behind, it's because both before_tokens and after_tokens may have
-    // a whitespace token just behind the current match that was previously ignored. If so, we'll 
+    // a whitespace token just behind the current match that was previously ignored. If so, we'll
     // expand the current match to include it.
     if (look_behind && before_start > 0 && after_start > 0) {
       var prev_before_key = before_tokens[before_start - 1].key;
@@ -526,14 +528,14 @@
   }
 
   /**
-   * Creates segment objects from the original document that can be used to restrict the area that 
-   * find_best_match and it's helper functions search to increase performance. 
-   * 
+   * Creates segment objects from the original document that can be used to restrict the area that
+   * find_best_match and it's helper functions search to increase performance.
+   *
    * @param {Array.<Token>} before_tokens Tokens from the before document.
    * @param {Array.<Token>} after_tokens Tokens from the after document.
    * @param {number} before_index The index within the before document where this segment begins.
    * @param {number} after_index The index within the after document where this segment behinds.
-   * 
+   *
    * @return {Segment} The segment object.
    */
   function create_segment(before_tokens, after_tokens, before_index, after_index) {
@@ -544,7 +546,7 @@
       after_map: create_index(after_tokens),
       before_index: before_index,
       after_index: after_index
-    }
+    };
   }
 
   /*
@@ -560,7 +562,7 @@
     var matches = new MatchBinarySearchTree();
     var match;
     var segments = [segment];
-    
+
     // Each time the best match is found in a segment, zero, one or two new segments may be created
     // from the parts of the original segment not included in the match. We will continue to
     // iterate until all segments have been processed.
@@ -568,14 +570,14 @@
       segment = segments.pop();
       match = find_best_match(segment);
 
-      if (match.length){
+      if (match && match.length){
         // If there's an unmatched area at the start of the segment, create a new segment from that
         // area and throw it into the segments array to get processed.
         if (match.segment_start_in_before > 0 && match.segment_start_in_after > 0){
           var left_before_tokens = segment.before_tokens.slice(0, match.segment_start_in_before);
           var left_after_tokens = segment.after_tokens.slice(0, match.segment_start_in_after);
 
-          segments.push(create_segment(left_before_tokens, left_after_tokens, segment.before_index, 
+          segments.push(create_segment(left_before_tokens, left_after_tokens, segment.before_index,
             segment.after_index));
         }
 
@@ -587,13 +589,14 @@
         var right_after_index = segment.after_index + match.segment_end_in_after + 1;
 
         if (right_before_tokens.length && right_after_tokens.length) {
-          segments.push(create_segment(right_before_tokens, right_after_tokens, right_before_index, 
+          segments.push(create_segment(right_before_tokens, right_after_tokens, right_before_index,
             right_after_index));
         }
+        
+        matches.add(match);
       }
-      matches.add(match);
     }
-    
+
     return matches.to_array();
   }
 
@@ -680,7 +683,7 @@
     for (var i = 0; i < operations.length; i++){
       var op = operations[i];
 
-      if ((is_single_whitespace(op) && last_op.action === 'replace') || 
+      if ((is_single_whitespace(op) && last_op.action === 'replace') ||
           (op.action === 'replace' && last_op.action === 'replace')){
         last_op.end_in_before = op.end_in_before;
         last_op.end_in_after = op.end_in_after;
@@ -776,7 +779,8 @@
    */
   var op_map = {
     'equal': function(op, before_tokens, after_tokens, class_name){
-      return after_tokens.slice(op.start_in_after, op.end_in_after + 1).reduce(function(prev, curr) {
+      return after_tokens.slice(op.start_in_after, op.end_in_after + 1).reduce(
+          function(prev, curr) {
         return prev + curr.string;
       }, '');
     },
@@ -861,7 +865,7 @@
   } else if (typeof module !== 'undefined' && module !== null){
     module.exports = diff;
   } else {
-    this.htmldiff = diff;
+    this.htmldiff3 = diff;
   }
 
 }).call(this);
