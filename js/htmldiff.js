@@ -865,7 +865,7 @@
   } else if (typeof module !== 'undefined' && module !== null){
     module.exports = diff;
   } else {
-    this.htmldiff3 = diff;
+    this.htmldiff = diff;
   }
 
 }).call(this);
