@@ -846,7 +846,10 @@
 
   diff.html_to_tokens = html_to_tokens;
   diff.find_matching_blocks = find_matching_blocks;
+  find_matching_blocks.find_best_match = find_best_match;
   find_matching_blocks.create_index = create_index;
+  find_matching_blocks.create_token = create_token;
+  find_matching_blocks.create_segment = create_segment;
   find_matching_blocks.get_key_for_token = get_key_for_token;
   diff.calculate_operations = calculate_operations;
   diff.render_operations = render_operations;

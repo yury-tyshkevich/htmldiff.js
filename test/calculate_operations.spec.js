@@ -1,9 +1,10 @@
 // Calculates the differences into a list of edit operations.
 describe('calculate_operations', function(){
-  var cut, res;
+  var cut, res, tokenize;
 
   beforeEach(function(){
     cut = require('../js/htmldiff').calculate_operations;
+    tokenize = require('../js/htmldiff').html_to_tokens;
   });
 
   it('should be a function', function(){
@@ -14,8 +15,8 @@ describe('calculate_operations', function(){
     describe('In the middle', function(){
       describe('Replace', function(){
         beforeEach(function(){
-          var before = 'working on it'.split(' ');
-          var after = 'working in it'.split(' ');
+          var before = tokenize('working on it');
+          var after = tokenize('working in it');
           res = cut(before, after);
         });
 
@@ -26,18 +27,18 @@ describe('calculate_operations', function(){
         it('should replace "on"', function(){
           expect(res[1]).eql({
             action         : 'replace',
-            start_in_before: 1,
-            end_in_before  : 1,
-            start_in_after : 1,
-            end_in_after   : 1
+            start_in_before: 2,
+            end_in_before  : 2,
+            start_in_after : 2,
+            end_in_after   : 2
           });
         });
       }); // describe('Replace')
 
       describe('Insert', function(){
         beforeEach(function(){
-          var before = 'working it'.split(' ');
-          var after = 'working on it'.split(' ');
+          var before = tokenize('working it');
+          var after = tokenize('working in it');
           res = cut(before, after);
         });
 
@@ -48,17 +49,17 @@ describe('calculate_operations', function(){
         it('should show an insert for "on"', function(){
           expect(res[1]).eql({
             action         : 'insert',
-            start_in_before: 1,
+            start_in_before: 2,
             end_in_before  : undefined,
-            start_in_after : 1,
-            end_in_after   : 1
+            start_in_after : 2,
+            end_in_after   : 3
           });
         });
 
         describe('More than one word', function(){
           beforeEach(function(){
-            var before = 'working it'.split(' ');
-            var after = 'working all up on it'.split(' ');
+            var before = tokenize('working it');
+            var after =  tokenize('working all up on it');
             res = cut(before, after);
           });
 
@@ -69,10 +70,10 @@ describe('calculate_operations', function(){
           it('should show a big insert', function(){
             expect(res[1]).eql({
               action         : 'insert',
-              start_in_before: 1,
+              start_in_before: 2,
               end_in_before  : undefined,
-              start_in_after : 1,
-              end_in_after   : 3
+              start_in_after : 2,
+              end_in_after   : 7
             });
           });
         }); // describe('More than one word')
@@ -80,8 +81,8 @@ describe('calculate_operations', function(){
 
       describe('Delete', function(){
         beforeEach(function(){
-          var before = 'this is a lot of text'.split(' ');
-          var after = 'this is text'.split(' ');
+          var before = tokenize('this is a lot of text');
+          var after = tokenize('this is text');
           res = cut(before, after);
         });
 
@@ -92,9 +93,9 @@ describe('calculate_operations', function(){
         it('should show the delete in the middle', function(){
           expect(res[1]).eql({
             action: 'delete',
-            start_in_before: 2,
-            end_in_before: 4,
-            start_in_after: 2,
+            start_in_before: 4,
+            end_in_before: 9,
+            start_in_after: 4,
             end_in_after: undefined
           });
         });
@@ -102,8 +103,8 @@ describe('calculate_operations', function(){
 
       describe('Equal', function(){
         beforeEach(function(){
-          var before = 'this is what it sounds like'.split(' ');
-          var after = 'this is what it sounds like'.split(' ');
+          var before = tokenize('this is what it sounds like');
+          var after = tokenize('this is what it sounds like');
           res = cut(before, after);
         });
 
@@ -112,9 +113,9 @@ describe('calculate_operations', function(){
           expect(res[0]).eql({
             action: 'equal',
             start_in_before: 0,
-            end_in_before: 5,
+            end_in_before: 10,
             start_in_after: 0,
-            end_in_after: 5
+            end_in_after: 10
           });
         });
       }); // describe('Equal')
@@ -123,8 +124,8 @@ describe('calculate_operations', function(){
     describe('At the beginning', function(){
       describe('Replace', function(){
         beforeEach(function(){
-          var before = 'I dont like veggies'.split(' ');
-          var after = 'Joe loves veggies'.split(' ');
+          var before = tokenize('I dont like veggies');
+          var after = tokenize('Joe loves veggies');
           res = cut(before, after);
         });
 
@@ -136,17 +137,17 @@ describe('calculate_operations', function(){
           expect(res[0]).eql({
             action         : 'replace',
             start_in_before: 0,
-            end_in_before  : 2,
+            end_in_before  : 4,
             start_in_after : 0,
-            end_in_after   : 1
+            end_in_after   : 2
           });
         });
       }); // describe('Replace')
 
       describe('Insert', function(){
         beforeEach(function(){
-          var before = 'dog'.split(' ');
-          var after = 'the shaggy dog'.split(' ');
+          var before = tokenize('dog');
+          var after = tokenize('the shaggy dog');
           res = cut(before, after);
         });
 
@@ -160,15 +161,15 @@ describe('calculate_operations', function(){
             start_in_before: 0,
             end_in_before  : undefined,
             start_in_after : 0,
-            end_in_after   : 1
+            end_in_after   : 3
           });
         });
       }); // describe('Insert')
 
       describe('Delete', function(){
         beforeEach(function(){
-          var before = 'awesome dog barks'.split(' ');
-          var after = 'dog barks'.split(' ');
+          var before = tokenize('awesome dog barks');
+          var after = tokenize('dog barks');
           res = cut(before, after);
         });
 
@@ -180,7 +181,7 @@ describe('calculate_operations', function(){
           expect(res[0]).eql({
             action         : 'delete',
             start_in_before: 0,
-            end_in_before  : 0,
+            end_in_before  : 1,
             start_in_after : 0,
             end_in_after   : undefined
           });
@@ -191,8 +192,8 @@ describe('calculate_operations', function(){
     describe('At the end', function(){
       describe('Replace', function(){
         beforeEach(function(){
-          var before = 'the dog bit the cat'.split(' ');
-          var after = 'the dog bit a bird'.split(' ');
+          var before = tokenize('the dog bit the cat');
+          var after = tokenize('the dog bit a bird');
           res = cut(before, after);
         });
 
@@ -203,18 +204,18 @@ describe('calculate_operations', function(){
         it('should have a replace at the end', function(){
           expect(res[1]).eql({
             action         : 'replace',
-            start_in_before: 3,
-            end_in_before  : 4,
-            start_in_after : 3,
-            end_in_after   : 4
+            start_in_before: 6,
+            end_in_before  : 8,
+            start_in_after : 6,
+            end_in_after   : 8
           });
         });
       }); // describe('Replace')
 
       describe('Insert', function(){
         beforeEach(function(){
-          var before = 'this is a dog'.split(' ');
-          var after = 'this is a dog that barks'.split(' ');
+          var before = tokenize('this is a dog');
+          var after = tokenize('this is a dog that barks');
           res = cut(before, after);
         });
 
@@ -225,18 +226,18 @@ describe('calculate_operations', function(){
         it('should have an Insert at the end', function(){
           expect(res[1]).eql({
             action         : 'insert',
-            start_in_before: 4,
+            start_in_before: 7,
             end_in_before  : undefined,
-            start_in_after : 4,
-            end_in_after   : 5
+            start_in_after : 7,
+            end_in_after   : 10
           });
         });
       }); // describe('Insert')
 
       describe('Delete', function(){
         beforeEach(function(){
-          var before = 'this is a dog that barks'.split(' ');
-          var after = 'this is a dog'.split(' ');
+          var before = tokenize('this is a dog that barks');
+          var after = tokenize('this is a dog');
           res = cut(before, after);
         });
 
@@ -247,9 +248,9 @@ describe('calculate_operations', function(){
         it('should have a delete at the end', function(){
           expect(res[1]).eql({
             action         : 'delete',
-            start_in_before: 4,
-            end_in_before  : 5,
-            start_in_after : 4,
+            start_in_before: 7,
+            end_in_before  : 10,
+            start_in_after : 7,
             end_in_after   : undefined
           });
         });
@@ -258,53 +259,20 @@ describe('calculate_operations', function(){
   }); // describe('Actions')
 
   describe('Action Combination', function(){
-    describe('Absorb single-whitespace to make contiguous replace actions', function(){
+    describe('dont absorb non-single-whitespace tokens', function(){
       beforeEach(function(){
-        // There are a bunch of replaces, but, because whitespace is
-        // tokenized, they are broken up with equals. We want to combine
-        // them into a contiguous replace operation.
-        var before = ['I', ' ', 'am', ' ', 'awesome'];
-        var after = ['You', ' ', 'are', ' ', 'great'];
+        var before = tokenize('I  am awesome');
+        var after = tokenize('You  are great');
         res = cut(before, after);
       });
 
-      it('should return 1 action', function(){
+      it('should return 3 actions', function(){
         expect(res.length).to.equal(1);
       });
 
-      it('should return the correct replace action', function(){
-        expect(res[0]).eql({
-          action: 'replace',
-          start_in_before: 0,
-          end_in_before: 4,
-          start_in_after: 0,
-          end_in_after: 4
-        });
+      it('should have a replace first', function(){
+        expect(res[0].action).to.equal('replace');
       });
-
-      describe('but dont absorb non-single-whitespace tokens', function(){
-        beforeEach(function(){
-          var before = ['I', '  ', 'am', ' ', 'awesome'];
-          var after = ['You', '  ', 'are', ' ', 'great'];
-          res = cut(before, after);
-        });
-
-        it('should return 3 actions', function(){
-          expect(res.length).to.equal(3);
-        });
-
-        it('should have a replace first', function(){
-          expect(res[0].action).to.equal('replace');
-        });
-
-        it('should have an equal second', function(){
-          expect(res[1].action).to.equal('equal');
-        });
-
-        it('should have a replace last', function(){
-          expect(res[2].action).to.equal('replace');
-        });
-      }); // describe('but dont absorb non-single-whitespace tokens')
-    }); // describe('Absorb single-whitespace to make contiguous replace actions')
+    }); // describe('dont absorb non-single-whitespace tokens')
   }); // describe('Action Combination')
 }); // describe('calculate_operations')
