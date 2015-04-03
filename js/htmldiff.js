@@ -41,11 +41,19 @@
   }
 
   function is_tag(token){
-    return /^\s*<[^>]+>\s*$/.test(token);
+    return /^\s*<[^!>][^>]*>\s*$/.test(token);
   }
 
   function isnt_tag(token){
     return !is_tag(token);
+  }
+
+  function is_start_of_html_comment(word) {
+    return /^<!--/.test(word);
+  }
+
+  function is_end_of_html_comment(word) {
+    return /--\>$/.test(word);
   }
 
   /*
@@ -162,6 +170,9 @@
             mode = 'atomic_tag';
             current_atomic_tag = atomic_tag;
             current_word += char;
+          } else if (is_start_of_html_comment(current_word)) {
+            mode = 'html_comment';
+            current_word += char;
           } else if (is_end_of_tag(char)){
             current_word += '>';
             words.push(create_token(current_word));
@@ -184,6 +195,13 @@
             mode = 'char';
           } else {
             current_word += char;
+          }
+          break;
+        case 'html_comment':
+          current_word += char;
+          if (is_end_of_html_comment(current_word)){
+            current_word = '';
+            mode = 'char';
           }
           break;
         case 'char':

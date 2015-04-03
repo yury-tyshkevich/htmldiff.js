@@ -35,6 +35,11 @@ describe('html_to_tokens', function(){
     it('should return 11', function(){
       expect(res.length).to.equal(11);
     });
+
+    it('should remove any html comments', function() {
+      res = cut('<p> this is <!-- a comment! --> </p>');
+      expect(res.length).to.equal(8);
+    });
   }); // describe('when called with html')
 
   it('should identify contiguous whitespace as a single token', function(){
