@@ -38,7 +38,6 @@ describe('html_to_tokens', function(){
 
     it('should remove any html comments', function() {
       res = cut('<p> this is <!-- a comment! --> </p>');
-      console.log(res);
       expect(res.length).to.equal(8);
     });
   }); // describe('when called with html')
