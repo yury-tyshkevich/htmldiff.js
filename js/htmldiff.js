@@ -625,22 +625,23 @@
         var positionInBefore = 0;
         var positionInAfter = 0;
         var operations = [];
-        var action_map = {
-            'false,false': 'replace',
-            'true,false': 'insert',
-            'false,true': 'delete',
-            'true,true': 'none'
-        };
         var segment = createSegment(beforeTokens, afterTokens, 0, 0);
         var matches = findMatchingBlocks(segment);
         matches.push(new Match(beforeTokens.length, afterTokens.length, 0, segment));
 
         for (var index = 0; index < matches.length; index++){
             var match = matches[index];
-            var matchStartsAtCurrentPositionInBefore = positionInBefore === match.startInBefore;
-            var matchStartsAtCurrentPositionInAfter = positionInAfter === match.startInAfter;
-            var actionUpToMatchPositions = action_map[[matchStartsAtCurrentPositionInBefore,
-                    matchStartsAtCurrentPositionInAfter].toString()];
+            var actionUpToMatchPositions = 'none';
+            if (positionInBefore === match.startInBefore){
+                if (positionInAfter !== match.startInAfter){
+                    actionUpToMatchPositions = 'insert';
+                }
+            } else {
+                actionUpToMatchPositions = 'delete';
+                if (positionInAfter !== match.startInAfter){
+                    actionUpToMatchPositions = 'replace';
+                }
+            }
             if (actionUpToMatchPositions !== 'none'){
                 operations.push({
                     action: actionUpToMatchPositions,
@@ -668,7 +669,7 @@
         var postProcessed = [];
         var lastOp = {action: 'none'};
 
-        function is_single_whitespace(op){
+        function isSingleWhitespace(op){
             if (op.action !== 'equal'){
                 return false;
             }
@@ -681,7 +682,7 @@
         for (var i = 0; i < operations.length; i++){
             var op = operations[i];
 
-            if ((is_single_whitespace(op) && lastOp.action === 'replace') ||
+            if ((isSingleWhitespace(op) && lastOp.action === 'replace') ||
                     (op.action === 'replace' && lastOp.action === 'replace')){
                 lastOp.endInBefore = op.endInBefore;
                 lastOp.endInAfter = op.endInAfter;
@@ -765,7 +766,7 @@
      *
      * @param {Object} op The operation that applies to a prticular list of tokens. Has the
      *      following keys:
-     *      - {string} action One of {'replace', 'insert', 'delete', 'equal'}.
+     *      - {string} action One of ['replace', 'insert', 'delete', 'equal'].
      *      - {number} startInBefore The beginning of the range in the list of before tokens.
      *      - {number} endInBefore The end of the range in the list of before tokens.
      *      - {number} startInAfter The beginning of the range in the list of after tokens.
@@ -797,7 +798,7 @@
             });
             return wrap('del', val, className);
         },
-        'replace': function(op, beforeTokens, afterTokens, className){
+        'replace': function(){
             return OPS['delete'].apply(null, arguments) + OPS['insert'].apply(null, arguments);
         }
     };
