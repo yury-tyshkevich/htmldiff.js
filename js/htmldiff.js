@@ -41,7 +41,8 @@
     }
 
     function isTag(token){
-        return /^\s*<[^!>][^>]*>\s*$/.test(token);
+        var match = token.match(/^\s*<([^!>][^>]*)>\s*$/);
+        return !!match && match[1].trim().replace(/\s*/g, '');
     }
 
     function isntTag(token){
@@ -695,36 +696,69 @@
     }
 
     /**
-     * Returns a list of tokens of a particular type starting at a given index.
+     * A TokenWrapper provides a utility for grouping segments of tokens based on whether they're
+     * wrappable or not. A tag is considered wrappable if it is closed within the given set of
+     * tokens. For example, given the following tokens:
      *
-     * @param {number} start The index of first token to test.
-     * @param {Array.<string>} content The list of tokens.
-     * @param {function} predicate A function that returns true if a token is of
-     *      a particular type, false otherwise. It should accept the following
-     *      parameters:
-     *      - {string} The token to test.
+     *      ['</b>', 'this', ' ', 'is', ' ', 'a', ' ', '<b>', 'test', '</b>', '!']
+     *
+     * The first '</b>' is not considered wrappable since the tag is not fully contained within the
+     * array of tokens. The '<b>', 'test', and '</b>' would be a part of the same wrappable segment
+     * since the entire bold tag is within the set of tokens.
+     *
+     * TokenWrapper has a method 'combine' which allows walking over the segments to wrap them in
+     * tags.
      */
-    function consecutiveWhere(start, content, predicate){
-        content = content.slice(start, content.length + 1);
-        var lastMatchingIndex = null;
+    function TokenWrapper(tokens){
+        this.tokens = tokens;
+        this.tokenWrappable = tokens.reduce(function(data, token, index){
+            data.tokenWrappable.push(isWrappable(token));
 
-        for (var index = 0; index < content.length; index++){
-            var token = content[index];
-            var answer = predicate(token);
-
-            if (answer === true){
-                lastMatchingIndex = index;
+            var tag = !isVoidTag(token) && isTag(token);
+            var lastEntry = data.tagStack[data.tagStack.length - 1];
+            if (tag){
+                if (lastEntry && '/' + lastEntry.tag === tag){
+                    data.tokenWrappable[lastEntry.position] = true;
+                    data.tokenWrappable[index] = true;
+                    data.tagStack.pop();
+                } else {
+                    data.tagStack.push({
+                        tag: tag,
+                        position: index
+                    });
+                }
             }
-            if (answer === false){
-                break;
-            }
-        }
-
-        if (lastMatchingIndex !== null){
-            return content.slice(0, lastMatchingIndex + 1);
-        }
-        return [];
+            return data;
+        }, {tokenWrappable: [], tagStack: []}).tokenWrappable;
     }
+
+    /**
+     * Wraps the contained tokens in tags based on output given by a map function. Each segment of
+     * tokens will be visited. A segment is a continuous run of either all wrappable
+     * tokens or unwrappable tokens. The given map function will be called with each segment of
+     * tokens and the resulting strings will be combined to form the wrapped HTML.
+     *
+     * @param {function(boolean, Array.<string>)} mapFn A function called with an array of tokens
+     *      and whether those tokens are wrappable or not. The result should be a string.
+     */
+    TokenWrapper.prototype.combine = function(mapFn){
+        if (!this.tokens.length) return '';
+
+        var currentStatus = this.tokenWrappable[0];
+        var result = '';
+        var lastPosition = 0;
+
+        for (var position = 1; position < this.tokens.length; position++){
+            var newStatus = this.tokenWrappable[position];
+            if (newStatus !== currentStatus){
+                result += mapFn(currentStatus, this.tokens.slice(lastPosition, position));
+                lastPosition = position;
+                currentStatus = newStatus;
+            }
+        }
+
+        return result + mapFn(currentStatus, this.tokens.slice(lastPosition, position));
+    };
 
     /**
      * Wraps and concatenates a list of tokens with a tag. Does not wrap tag tokens,
@@ -738,26 +772,20 @@
         var rendering = '';
         var position = 0;
         var length = content.length;
+        var wrapper = new TokenWrapper(content);
+        var attrs = className ? ' class="' + className + '"' : '';
 
-        while (true){
-            if (position >= length) break;
-            var non_tags = consecutiveWhere(position, content, isWrappable);
-            position += non_tags.length;
-            if (non_tags.length !== 0){
-                var val = non_tags.join('');
-                var attrs = className ? ' class="' + className + '"' : '';
+        return wrapper.combine(function(isWrappable, tokens){
+            if (isWrappable){
+                var val = tokens.join('');
                 if (val.trim()){
-                    rendering += '<' + tag + attrs + '>' + val + '</' + tag + '>';
+                    return '<' + tag + attrs + '>' + val + '</' + tag + '>';
                 }
+            } else {
+                return tokens.join('');
             }
-
-            if (position >= length) break;
-
-            var tags = consecutiveWhere(position, content, isTag);
-            position += tags.length;
-            rendering += tags.join('');
-        }
-        return rendering;
+            return '';
+        });
     }
 
     /**

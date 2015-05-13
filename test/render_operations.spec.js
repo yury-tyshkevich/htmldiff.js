@@ -76,8 +76,16 @@ describe('renderOperations', function(){
             res = cut(before, after);
         });
 
-        it('should make sure the <ins/del> tags are within the <p> tags', function(){
-            expect(res).to.equal('<p>a<ins> b</ins></p><p><ins>c</ins></p>');
+        it('should wrap contained tags', function(){
+            expect(res).to.equal('<p>a<ins> b</ins></p><ins><p>c</p></ins>');
+        });
+
+        it('should not wrap partial tags', function(){
+            var before = tokenize(['test', '</b>', 'non-bold']);
+            var after = tokenize(['test!', '</b>', 'non-bold', '<b>', 'bold']);
+            res = cut(before, after);
+
+            expect(res).to.equal('<del>test</del><ins>test!</ins></b>non-bold<b><ins>bold</ins>');
         });
 
         describe('When there is a change at the beginning, in a <p>', function(){
