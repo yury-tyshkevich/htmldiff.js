@@ -1,11 +1,11 @@
 describe('The module', function(){
-  var cut;
+    var cut;
 
-  beforeEach(function(){
-    cut = require('../js/htmldiff');
-  });
+    beforeEach(function(){
+        cut = require('../js/htmldiff');
+    });
 
-  it('should return a function', function(){
-    expect(cut).is.a('function');
-  });
-}); // describe('The module')
+    it('should return a function', function(){
+        expect(cut).is.a('function');
+    });
+});
