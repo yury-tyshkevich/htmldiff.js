@@ -42,7 +42,7 @@
 
     function isTag(token){
         var match = token.match(/^\s*<([^!>][^>]*)>\s*$/);
-        return !!match && match[1].trim().replace(/\s*/g, '');
+        return !!match && match[1].trim().split(' ')[0];
     }
 
     function isntTag(token){
@@ -711,15 +711,17 @@
      */
     function TokenWrapper(tokens){
         this.tokens = tokens;
-        this.tokenWrappable = tokens.reduce(function(data, token, index){
-            data.tokenWrappable.push(isWrappable(token));
+        this.notes = tokens.reduce(function(data, token, index){
+            data.notes.push({
+                isWrappable: isWrappable(token),
+                insertedTag: false
+            });
 
             var tag = !isVoidTag(token) && isTag(token);
             var lastEntry = data.tagStack[data.tagStack.length - 1];
             if (tag){
                 if (lastEntry && '/' + lastEntry.tag === tag){
-                    data.tokenWrappable[lastEntry.position] = true;
-                    data.tokenWrappable[index] = true;
+                    data.notes[lastEntry.position].insertedTag = true;
                     data.tagStack.pop();
                 } else {
                     data.tagStack.push({
@@ -729,7 +731,7 @@
                 }
             }
             return data;
-        }, {tokenWrappable: [], tagStack: []}).tokenWrappable;
+        }, {notes: [], tagStack: []}).notes;
     }
 
     /**
@@ -741,23 +743,35 @@
      * @param {function(boolean, Array.<string>)} mapFn A function called with an array of tokens
      *      and whether those tokens are wrappable or not. The result should be a string.
      */
-    TokenWrapper.prototype.combine = function(mapFn){
-        if (!this.tokens.length) return '';
-
-        var currentStatus = this.tokenWrappable[0];
-        var result = '';
-        var lastPosition = 0;
-
-        for (var position = 1; position < this.tokens.length; position++){
-            var newStatus = this.tokenWrappable[position];
-            if (newStatus !== currentStatus){
-                result += mapFn(currentStatus, this.tokens.slice(lastPosition, position));
-                lastPosition = position;
-                currentStatus = newStatus;
+    TokenWrapper.prototype.combine = function(mapFn, tagFn){
+        var notes = this.notes;
+        var tokens = this.tokens.slice();
+        var segments = tokens.reduce(function(data, token, index){
+            if (notes[index].insertedTag){
+                tokens[index] = tagFn(tokens[index]);
             }
-        }
+            if (data.status === null){
+                data.status = notes[index].isWrappable;
+            }
+            var status = notes[index].isWrappable;
+            if (status !== data.status){
+                data.list.push({
+                    isWrappable: data.status,
+                    tokens: tokens.slice(data.lastIndex, index)
+                });
+                data.lastIndex = index;
+                data.status = status;
+            }
+            if (index === tokens.length - 1){
+                data.list.push({
+                    isWrappable: data.status,
+                    tokens: tokens.slice(data.lastIndex, index + 1)
+                });
+            }
+            return data;
+        }, {list: [], status: null, lastIndex: 0}).list;
 
-        return result + mapFn(currentStatus, this.tokens.slice(lastPosition, position));
+        return segments.map(mapFn).join('');
     };
 
     /**
@@ -768,23 +782,25 @@
      * @param {Array.<string>} content The list of tokens to wrap.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      */
-    function wrap(tag, content, className){
-        var rendering = '';
-        var position = 0;
-        var length = content.length;
+    function wrap(tag, content, opIndex, className){
         var wrapper = new TokenWrapper(content);
-        var attrs = className ? ' class="' + className + '"' : '';
+        var attrs = ' data-operation-index="' + opIndex + '"';
+        if (className){
+            attrs += ' class="' + className + '"';
+        }
 
-        return wrapper.combine(function(isWrappable, tokens){
-            if (isWrappable){
-                var val = tokens.join('');
+        return wrapper.combine(function(segment){
+            if (segment.isWrappable){
+                var val = segment.tokens.join('');
                 if (val.trim()){
                     return '<' + tag + attrs + '>' + val + '</' + tag + '>';
                 }
             } else {
-                return tokens.join('');
+                return segment.tokens.join('');
             }
             return '';
+        }, function(tag){
+            return tag.replace(/>\s*$/, ' data-diff-inserted="true"$&');
         });
     }
 
@@ -806,25 +822,25 @@
      * @return {string} The rendering of that operation.
      */
     var OPS = {
-        'equal': function(op, beforeTokens, afterTokens, className){
+        'equal': function(op, beforeTokens, afterTokens, opIndex, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             return tokens.reduce(function(prev, curr){
                 return prev + curr.string;
             }, '');
         },
-        'insert': function(op, beforeTokens, afterTokens, className){
+        'insert': function(op, beforeTokens, afterTokens, opIndex, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('ins', val, className);
+            return wrap('ins', val, opIndex, className);
         },
-        'delete': function(op, beforeTokens, afterTokens, className){
+        'delete': function(op, beforeTokens, afterTokens, opIndex, className){
             var tokens = beforeTokens.slice(op.startInBefore, op.endInBefore + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('del', val, className);
+            return wrap('del', val, opIndex, className);
         },
         'replace': function(){
             return OPS['delete'].apply(null, arguments) + OPS['insert'].apply(null, arguments);
@@ -850,8 +866,8 @@
      * @return {string} The rendering of the list of operations.
      */
     function renderOperations(beforeTokens, afterTokens, operations, className){
-        return operations.reduce(function(rendering, op){
-            return rendering + OPS[op.action](op, beforeTokens, afterTokens, className);
+        return operations.reduce(function(rendering, op, index){
+            return rendering + OPS[op.action](op, beforeTokens, afterTokens, index, className);
         }, '');
     }
 

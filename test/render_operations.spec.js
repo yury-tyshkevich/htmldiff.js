@@ -40,7 +40,7 @@ describe('renderOperations', function(){
         });
 
         it('should wrap in an <ins>', function(){
-            expect(res).equal('this is<ins> a test</ins>');
+            expect(res).equal('this is<ins data-operation-index="1"> a test</ins>');
         });
     });
 
@@ -53,7 +53,7 @@ describe('renderOperations', function(){
         });
 
         it('should wrap in a <del>', function(){
-            expect(res).to.equal('this is a test<del> of stuff</del>');
+            expect(res).to.equal('this is a test<del data-operation-index="1"> of stuff</del>');
         });
     });
 
@@ -65,7 +65,8 @@ describe('renderOperations', function(){
         });
 
         it('should wrap in both <ins> and <del>', function(){
-            expect(res).to.equal('this is a <del>break</del><ins>test</ins>');
+            expect(res).to.equal('this is a <del data-operation-index="1">break</del>' +
+                    '<ins data-operation-index="1">test</ins>');
         });
     });
 
@@ -77,7 +78,8 @@ describe('renderOperations', function(){
         });
 
         it('should wrap contained tags', function(){
-            expect(res).to.equal('<p>a<ins> b</ins></p><ins><p>c</p></ins>');
+            expect(res).to.equal('<p>a<ins data-operation-index="1"> b</ins></p>' +
+                    '<p data-diff-inserted="true"><ins data-operation-index="3">c</ins></p>');
         });
 
         it('should not wrap partial tags', function(){
@@ -85,7 +87,9 @@ describe('renderOperations', function(){
             var after = tokenize(['test!', '</b>', 'non-bold', '<b>', 'bold']);
             res = cut(before, after);
 
-            expect(res).to.equal('<del>test</del><ins>test!</ins></b>non-bold<b><ins>bold</ins>');
+            expect(res).to.equal('<del data-operation-index="0">test</del>' +
+                    '<ins data-operation-index="0">test!</ins></b>non-bold<b>' +
+                    '<ins data-operation-index="2">bold</ins>');
         });
 
         describe('When there is a change at the beginning, in a <p>', function(){
@@ -96,7 +100,8 @@ describe('renderOperations', function(){
             });
 
             it('should keep the change inside the <p>', function(){
-                expect(res).to.equal('<p><del>this</del><ins>I</ins> is awesome</p>');
+                expect(res).to.equal('<p><del data-operation-index="1">this</del>' +
+                        '<ins data-operation-index="1">I</ins> is awesome</p>');
             });
         });
     });
@@ -131,7 +136,8 @@ describe('renderOperations', function(){
             res = cut(before, after);
 
             expect(res).to.equal('<p style="margin: 2px;" class="after">' +
-                    '<del>this</del><ins>that</ins> is awesome</p>');
+                    '<del data-operation-index="1">this</del><ins data-operation-index="1">' +
+                    'that</ins> is awesome</p>');
         });
     });
 
@@ -142,7 +148,8 @@ describe('renderOperations', function(){
 
             res = cut(before, after);
 
-            expect(res).to.equal('<del>old</del><ins>new<br/></ins> text');
+            expect(res).to.equal('<del data-operation-index="0">old</del>' +
+                    '<ins data-operation-index="0">new<br/></ins> text');
         });
 
         it('should wrap atomic tags', function(){
@@ -152,7 +159,8 @@ describe('renderOperations', function(){
             res = cut(before, after);
 
             expect(res).to.equal(
-                    '<del>old<iframe src="source.html"></iframe></del><ins>new</ins> text');
+                    '<del data-operation-index="0">old<iframe src="source.html"></iframe></del>' +
+                    '<ins data-operation-index="0">new</ins> text');
         });
     });
 });

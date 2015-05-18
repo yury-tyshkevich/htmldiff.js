@@ -21,7 +21,7 @@ describe('Diff', function(){
         });
 
         it('should mark the new letter', function(){
-            expect(res).to.equal('input<ins> 2</ins>');
+            expect(res).to.equal('input<ins data-operation-index="1"> 2</ins>');
         });
     });
 
@@ -42,7 +42,7 @@ describe('Diff', function(){
     describe('When a class name is specified', function(){
         it('should include the class in the wrapper tags', function(){
             expect(cut('input', 'input 2', 'diff-result')).to.equal(
-                    'input<ins class="diff-result"> 2</ins>');
+                    'input<ins data-operation-index="1" class="diff-result"> 2</ins>');
         });
     });
 });
