@@ -71,18 +71,29 @@ describe('renderOperations', function(){
     });
 
     describe('Dealing with tags', function(){
+        var before, after;
+
         beforeEach(function(){
-            var before = tokenize(['<p>', 'a', '</p>']);
-            var after = tokenize(['<p>', 'a', ' ', 'b', '</p>', '<p>', 'c', '</p>']);
+            before = tokenize(['<p>', 'a', '</p>']);
+            after = tokenize(['<p>', 'a', ' ', 'b', '</p>', '<p>', 'c', '</p>']);
             res = cut(before, after);
         });
 
-        it('should wrap contained tags', function(){
+        it('should identify contained inserted tags', function(){
             expect(res).to.equal('<p>a<ins data-operation-index="1"> b</ins></p>' +
-                    '<p data-diff-inserted="true"><ins data-operation-index="3">c</ins></p>');
+                    '<p data-diff-node="ins" data-operation-index="3">' +
+                    '<ins data-operation-index="3">c</ins></p>');
         });
 
-        it('should not wrap partial tags', function(){
+        it('should identify contained deleted tags', function(){
+            res = cut(after, before);
+
+            expect(res).to.equal('<p>a<del data-operation-index="1"> b</del></p>' +
+                    '<p data-diff-node="del" data-operation-index="3">' +
+                    '<del data-operation-index="3">c</del></p>');
+        });
+
+        it('should not identify partial tags', function(){
             var before = tokenize(['test', '</b>', 'non-bold']);
             var after = tokenize(['test!', '</b>', 'non-bold', '<b>', 'bold']);
             res = cut(before, after);

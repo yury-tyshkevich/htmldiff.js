@@ -799,8 +799,11 @@
                 return segment.tokens.join('');
             }
             return '';
-        }, function(tag){
-            return tag.replace(/>\s*$/, ' data-diff-inserted="true"$&');
+        }, function(openingTag){
+            var dataAttrs = ' data-diff-node="' + tag + '"';
+            dataAttrs += ' data-operation-index="' + opIndex + '"';
+
+            return openingTag.replace(/>\s*$/, dataAttrs + '$&');
         });
     }
 
