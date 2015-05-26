@@ -780,11 +780,13 @@
      *
      * @param {sting} tag The tag name of the wrapper tags.
      * @param {Array.<string>} content The list of tokens to wrap.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      */
-    function wrap(tag, content, opIndex, className){
+    function wrap(tag, content, opIndex, dataPrefix, className){
         var wrapper = new TokenWrapper(content);
-        var attrs = ' data-operation-index="' + opIndex + '"';
+        dataPrefix = dataPrefix ? dataPrefix + '-' : '';
+        var attrs = ' data-' + dataPrefix + 'operation-index="' + opIndex + '"';
         if (className){
             attrs += ' class="' + className + '"';
         }
@@ -801,7 +803,7 @@
             return '';
         }, function(openingTag){
             var dataAttrs = ' data-diff-node="' + tag + '"';
-            dataAttrs += ' data-operation-index="' + opIndex + '"';
+            dataAttrs += ' data-' + dataPrefix + 'operation-index="' + opIndex + '"';
 
             return openingTag.replace(/>\s*$/, dataAttrs + '$&');
         });
@@ -820,30 +822,31 @@
      *      - {number} endInAfter The end of the range in the list of after tokens.
      * @param {Array.<string>} beforeTokens The before list of tokens.
      * @param {Array.<string>} afterTokens The after list of tokens.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      *
      * @return {string} The rendering of that operation.
      */
     var OPS = {
-        'equal': function(op, beforeTokens, afterTokens, opIndex, className){
+        'equal': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             return tokens.reduce(function(prev, curr){
                 return prev + curr.string;
             }, '');
         },
-        'insert': function(op, beforeTokens, afterTokens, opIndex, className){
+        'insert': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('ins', val, opIndex, className);
+            return wrap('ins', val, opIndex, dataPrefix, className);
         },
-        'delete': function(op, beforeTokens, afterTokens, opIndex, className){
+        'delete': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = beforeTokens.slice(op.startInBefore, op.endInBefore + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('del', val, opIndex, className);
+            return wrap('del', val, opIndex, dataPrefix, className);
         },
         'replace': function(){
             return OPS['delete'].apply(null, arguments) + OPS['insert'].apply(null, arguments);
@@ -864,33 +867,37 @@
      *      - {number} endInBefore The end of the range in the list of before tokens.
      *      - {number} startInAfter The beginning of the range in the list of after tokens.
      *      - {number} endInAfter The end of the range in the list of after tokens.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      *
      * @return {string} The rendering of the list of operations.
      */
-    function renderOperations(beforeTokens, afterTokens, operations, className){
+    function renderOperations(beforeTokens, afterTokens, operations, dataPrefix, className){
         return operations.reduce(function(rendering, op, index){
-            return rendering + OPS[op.action](op, beforeTokens, afterTokens, index, className);
+            return rendering + OPS[op.action](
+                    op, beforeTokens, afterTokens, index, dataPrefix, className);
         }, '');
     }
 
-    /*
-    * Compares two pieces of HTML content and returns the combined content with differences
-    * wrapped in <ins> and <del> tags.
-    *
-    * @param {string} before The HTML content before the changes.
-    * @param {string} after The HTML content after the changes.
-    * @param {string} className (Optional) The class attribute to include in <ins> and <del> tags.
-    *
-    * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
-    */
-    function diff(before, after, className){
+    /**
+     * Compares two pieces of HTML content and returns the combined content with differences
+     * wrapped in <ins> and <del> tags.
+     *
+     * @param {string} before The HTML content before the changes.
+     * @param {string} after The HTML content after the changes.
+     * @param {string} className (Optional) The class attribute to include in <ins> and <del> tags.
+     * @param {string} dataPrefix (Optional) The data prefix to use for data attributes. The
+     *      operation index data attribute will be named `data-${dataPrefix-}operation-index`.
+     *
+     * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
+     */
+    function diff(before, after, className, dataPrefix){
         if (before === after) return before;
 
         before = htmlToTokens(before);
         after = htmlToTokens(after);
         var ops = calculateOperations(before, after);
-        return renderOperations(before, after, ops, className);
+        return renderOperations(before, after, ops, dataPrefix, className);
     }
 
     diff.htmlToTokens = htmlToTokens;

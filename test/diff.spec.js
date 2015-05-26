@@ -45,4 +45,12 @@ describe('Diff', function(){
                     'input<ins data-operation-index="1" class="diff-result"> 2</ins>');
         });
     });
+
+    describe('When a data prefix is specified', function(){
+        it('should include the data prefix in data attributes', function(){
+            expect(cut('input', 'input <b>2</b>', 'diff-result', 'prefix')).to.equal(
+                    'input<b data-diff-node="ins" data-prefix-operation-index="1">' +
+                    '<ins data-prefix-operation-index="1" class="diff-result">2</ins></b>');
+        });
+    });
 });
