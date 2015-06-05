@@ -40,6 +40,13 @@
         return /^\s+$/.test(char);
     }
 
+    /**
+     * Determines if the given token is a tag.
+     *
+     * @param {string} token The token in question.
+     *
+     * @return {boolean|string} False if the token is not a tag, or the tag name otherwise.
+     */
     function isTag(token){
         var match = token.match(/^\s*<([^!>][^>]*)>\s*$/);
         return !!match && match[1].trim().split(' ')[0];
@@ -822,6 +829,8 @@
      *      - {number} endInAfter The end of the range in the list of after tokens.
      * @param {Array.<string>} beforeTokens The before list of tokens.
      * @param {Array.<string>} afterTokens The after list of tokens.
+     * @param {number} opIndex The index into the list of operations that identifies the change to
+     *      be rendered. This is used to mark wrapped HTML as part of the same operation.
      * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      *
