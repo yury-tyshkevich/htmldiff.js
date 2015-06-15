@@ -40,8 +40,16 @@
         return /^\s+$/.test(char);
     }
 
+    /**
+     * Determines if the given token is a tag.
+     *
+     * @param {string} token The token in question.
+     *
+     * @return {boolean|string} False if the token is not a tag, or the tag name otherwise.
+     */
     function isTag(token){
-        return /^\s*<[^!>][^>]*>\s*$/.test(token);
+        var match = token.match(/^\s*<([^!>][^>]*)>\s*$/);
+        return !!match && match[1].trim().split(' ')[0];
     }
 
     function isntTag(token){
@@ -695,36 +703,83 @@
     }
 
     /**
-     * Returns a list of tokens of a particular type starting at a given index.
+     * A TokenWrapper provides a utility for grouping segments of tokens based on whether they're
+     * wrappable or not. A tag is considered wrappable if it is closed within the given set of
+     * tokens. For example, given the following tokens:
      *
-     * @param {number} start The index of first token to test.
-     * @param {Array.<string>} content The list of tokens.
-     * @param {function} predicate A function that returns true if a token is of
-     *      a particular type, false otherwise. It should accept the following
-     *      parameters:
-     *      - {string} The token to test.
+     *      ['</b>', 'this', ' ', 'is', ' ', 'a', ' ', '<b>', 'test', '</b>', '!']
+     *
+     * The first '</b>' is not considered wrappable since the tag is not fully contained within the
+     * array of tokens. The '<b>', 'test', and '</b>' would be a part of the same wrappable segment
+     * since the entire bold tag is within the set of tokens.
+     *
+     * TokenWrapper has a method 'combine' which allows walking over the segments to wrap them in
+     * tags.
      */
-    function consecutiveWhere(start, content, predicate){
-        content = content.slice(start, content.length + 1);
-        var lastMatchingIndex = null;
+    function TokenWrapper(tokens){
+        this.tokens = tokens;
+        this.notes = tokens.reduce(function(data, token, index){
+            data.notes.push({
+                isWrappable: isWrappable(token),
+                insertedTag: false
+            });
 
-        for (var index = 0; index < content.length; index++){
-            var token = content[index];
-            var answer = predicate(token);
-
-            if (answer === true){
-                lastMatchingIndex = index;
+            var tag = !isVoidTag(token) && isTag(token);
+            var lastEntry = data.tagStack[data.tagStack.length - 1];
+            if (tag){
+                if (lastEntry && '/' + lastEntry.tag === tag){
+                    data.notes[lastEntry.position].insertedTag = true;
+                    data.tagStack.pop();
+                } else {
+                    data.tagStack.push({
+                        tag: tag,
+                        position: index
+                    });
+                }
             }
-            if (answer === false){
-                break;
-            }
-        }
-
-        if (lastMatchingIndex !== null){
-            return content.slice(0, lastMatchingIndex + 1);
-        }
-        return [];
+            return data;
+        }, {notes: [], tagStack: []}).notes;
     }
+
+    /**
+     * Wraps the contained tokens in tags based on output given by a map function. Each segment of
+     * tokens will be visited. A segment is a continuous run of either all wrappable
+     * tokens or unwrappable tokens. The given map function will be called with each segment of
+     * tokens and the resulting strings will be combined to form the wrapped HTML.
+     *
+     * @param {function(boolean, Array.<string>)} mapFn A function called with an array of tokens
+     *      and whether those tokens are wrappable or not. The result should be a string.
+     */
+    TokenWrapper.prototype.combine = function(mapFn, tagFn){
+        var notes = this.notes;
+        var tokens = this.tokens.slice();
+        var segments = tokens.reduce(function(data, token, index){
+            if (notes[index].insertedTag){
+                tokens[index] = tagFn(tokens[index]);
+            }
+            if (data.status === null){
+                data.status = notes[index].isWrappable;
+            }
+            var status = notes[index].isWrappable;
+            if (status !== data.status){
+                data.list.push({
+                    isWrappable: data.status,
+                    tokens: tokens.slice(data.lastIndex, index)
+                });
+                data.lastIndex = index;
+                data.status = status;
+            }
+            if (index === tokens.length - 1){
+                data.list.push({
+                    isWrappable: data.status,
+                    tokens: tokens.slice(data.lastIndex, index + 1)
+                });
+            }
+            return data;
+        }, {list: [], status: null, lastIndex: 0}).list;
+
+        return segments.map(mapFn).join('');
+    };
 
     /**
      * Wraps and concatenates a list of tokens with a tag. Does not wrap tag tokens,
@@ -732,32 +787,33 @@
      *
      * @param {sting} tag The tag name of the wrapper tags.
      * @param {Array.<string>} content The list of tokens to wrap.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      */
-    function wrap(tag, content, className){
-        var rendering = '';
-        var position = 0;
-        var length = content.length;
-
-        while (true){
-            if (position >= length) break;
-            var non_tags = consecutiveWhere(position, content, isWrappable);
-            position += non_tags.length;
-            if (non_tags.length !== 0){
-                var val = non_tags.join('');
-                var attrs = className ? ' class="' + className + '"' : '';
-                if (val.trim()){
-                    rendering += '<' + tag + attrs + '>' + val + '</' + tag + '>';
-                }
-            }
-
-            if (position >= length) break;
-
-            var tags = consecutiveWhere(position, content, isTag);
-            position += tags.length;
-            rendering += tags.join('');
+    function wrap(tag, content, opIndex, dataPrefix, className){
+        var wrapper = new TokenWrapper(content);
+        dataPrefix = dataPrefix ? dataPrefix + '-' : '';
+        var attrs = ' data-' + dataPrefix + 'operation-index="' + opIndex + '"';
+        if (className){
+            attrs += ' class="' + className + '"';
         }
-        return rendering;
+
+        return wrapper.combine(function(segment){
+            if (segment.isWrappable){
+                var val = segment.tokens.join('');
+                if (val.trim()){
+                    return '<' + tag + attrs + '>' + val + '</' + tag + '>';
+                }
+            } else {
+                return segment.tokens.join('');
+            }
+            return '';
+        }, function(openingTag){
+            var dataAttrs = ' data-diff-node="' + tag + '"';
+            dataAttrs += ' data-' + dataPrefix + 'operation-index="' + opIndex + '"';
+
+            return openingTag.replace(/>\s*$/, dataAttrs + '$&');
+        });
     }
 
     /**
@@ -773,30 +829,33 @@
      *      - {number} endInAfter The end of the range in the list of after tokens.
      * @param {Array.<string>} beforeTokens The before list of tokens.
      * @param {Array.<string>} afterTokens The after list of tokens.
+     * @param {number} opIndex The index into the list of operations that identifies the change to
+     *      be rendered. This is used to mark wrapped HTML as part of the same operation.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      *
      * @return {string} The rendering of that operation.
      */
     var OPS = {
-        'equal': function(op, beforeTokens, afterTokens, className){
+        'equal': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             return tokens.reduce(function(prev, curr){
                 return prev + curr.string;
             }, '');
         },
-        'insert': function(op, beforeTokens, afterTokens, className){
+        'insert': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = afterTokens.slice(op.startInAfter, op.endInAfter + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('ins', val, className);
+            return wrap('ins', val, opIndex, dataPrefix, className);
         },
-        'delete': function(op, beforeTokens, afterTokens, className){
+        'delete': function(op, beforeTokens, afterTokens, opIndex, dataPrefix, className){
             var tokens = beforeTokens.slice(op.startInBefore, op.endInBefore + 1);
             var val = tokens.map(function(token){
                 return token.string;
             });
-            return wrap('del', val, className);
+            return wrap('del', val, opIndex, dataPrefix, className);
         },
         'replace': function(){
             return OPS['delete'].apply(null, arguments) + OPS['insert'].apply(null, arguments);
@@ -817,33 +876,37 @@
      *      - {number} endInBefore The end of the range in the list of before tokens.
      *      - {number} startInAfter The beginning of the range in the list of after tokens.
      *      - {number} endInAfter The end of the range in the list of after tokens.
+     * @param {string} dataPrefix (Optional) The prefix to use in data attributes.
      * @param {string} className (Optional) The class name to include in the wrapper tag.
      *
      * @return {string} The rendering of the list of operations.
      */
-    function renderOperations(beforeTokens, afterTokens, operations, className){
-        return operations.reduce(function(rendering, op){
-            return rendering + OPS[op.action](op, beforeTokens, afterTokens, className);
+    function renderOperations(beforeTokens, afterTokens, operations, dataPrefix, className){
+        return operations.reduce(function(rendering, op, index){
+            return rendering + OPS[op.action](
+                    op, beforeTokens, afterTokens, index, dataPrefix, className);
         }, '');
     }
 
-    /*
-    * Compares two pieces of HTML content and returns the combined content with differences
-    * wrapped in <ins> and <del> tags.
-    *
-    * @param {string} before The HTML content before the changes.
-    * @param {string} after The HTML content after the changes.
-    * @param {string} className (Optional) The class attribute to include in <ins> and <del> tags.
-    *
-    * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
-    */
-    function diff(before, after, className){
+    /**
+     * Compares two pieces of HTML content and returns the combined content with differences
+     * wrapped in <ins> and <del> tags.
+     *
+     * @param {string} before The HTML content before the changes.
+     * @param {string} after The HTML content after the changes.
+     * @param {string} className (Optional) The class attribute to include in <ins> and <del> tags.
+     * @param {string} dataPrefix (Optional) The data prefix to use for data attributes. The
+     *      operation index data attribute will be named `data-${dataPrefix-}operation-index`.
+     *
+     * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
+     */
+    function diff(before, after, className, dataPrefix){
         if (before === after) return before;
 
         before = htmlToTokens(before);
         after = htmlToTokens(after);
         var ops = calculateOperations(before, after);
-        return renderOperations(before, after, ops, className);
+        return renderOperations(before, after, ops, dataPrefix, className);
     }
 
     diff.htmlToTokens = htmlToTokens;
