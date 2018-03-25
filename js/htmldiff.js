@@ -70,7 +70,7 @@
      */
     var atomicTagsRegExp;
     // Added head and style (for style tags inside the body)
-    var defaultAtomicTagsRegExp = new RegExp('^<(iframe|object|math|svg|script|head|style)');
+    var defaultAtomicTagsRegExp = new RegExp('^<(iframe|object|math|svg|script|video|head|style)');
     
     /**
      * Checks if the current word is the beginning of an atomic tag. An atomic tag is one whose
@@ -120,7 +120,8 @@
      * @return {boolean} True if the token can be wrapped inside a tag, false otherwise.
      */
     function isWrappable(token){
-        return isntTag(token) || isStartOfAtomicTag(token) || isVoidTag(token);
+        var is_img = /^<img[\s>]/.test(token);
+        return is_img|| isntTag(token) || isStartOfAtomicTag(token) || isVoidTag(token);
     }
 
     /**
@@ -281,11 +282,48 @@
      * @return {string} The identifying key that should be used to match before and after tokens.
      */
     function getKeyForToken(token){
+        // If the token is an image element, grab it's src attribute to include in the key.
+        var img = /^<img.*src=['"]([^"']*)['"].*>$/.exec(token);
+        if (img) {
+            return '<img src="' + img[1] + '">';
+        }
+
+        // If the token is an object element, grab it's data attribute to include in the key.
+        var object = /^<object.*data=['"]([^"']*)['"]/.exec(token);
+        if (object) {
+            return '<object src="' + object[1] + '"></object>';
+        }
+
+        // If it's a video, math or svg element, the entire token should be compared except the
+        // data-uuid.
+        if(/^<(svg|math|video)[\s>]/.test(token)) {
+            var uuid = token.indexOf('data-uuid="');
+            if (uuid !== -1) {
+                var start = token.slice(0, uuid);
+                var end = token.slice(uuid + 44);
+                return start + end;
+            } else {
+                return token;
+            } 
+        }
+
+        // If the token is an iframe element, grab it's src attribute to include in it's key.
+        var iframe = /^<iframe.*src=['"]([^"']*)['"].*>/.exec(token);
+        if (iframe) {
+            return '<iframe src="' + iframe[1] + '"></iframe>';
+        }
+
+        // If the token is any other element, just grab the tag name.
         var tagName = /<([^\s>]+)[\s>]/.exec(token);
         if (tagName){
             return '<' + (tagName[1].toLowerCase()) + '>';
         }
-        return token && token.replace(/(\s+|&nbsp;|&#160;)/g, ' ');
+
+        // Otherwise, the token is text, collapse the whitespace.
+        if (token) {
+            return token.replace(/(\s+|&nbsp;|&#160;)/g, ' ');
+        }
+        return token;
     }
 
     /**
@@ -907,7 +945,7 @@
      *      operation index data attribute will be named `data-${dataPrefix-}operation-index`.
      * @param {string} atomicTags (Optional) List of atomic tag names. The list has to be in the 
      *     form 'tag1|tag2|tag3|...' e. g. 'head|script|style|...'. If not used, the default list 
-     *     'iframe|object|math|svg|script|head|style' will be used.
+     *     'iframe|object|math|svg|script|video|head|style' will be used.
      *
      * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
      */

@@ -11,7 +11,7 @@
  *     'tag1|tag2|tag3|...' e. g. 'head|script|style|...'. An atomic tag is one whose child 
  *     nodes should not be compared - the entire tag should be treated as one token. This is 
  *     useful for tags where it does not make sense to insert <ins> and <del> tags.
- *     If not used, the default list 'iframe|object|math|svg|script|head|style' will be used.
+ *     If not used, the default list 'iframe|object|math|svg|script|video|head|style' will be used.
  *
  * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
  */
