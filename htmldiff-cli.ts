@@ -48,12 +48,12 @@ Options:
   incremented counter.
 
 -t atomicTags (optional):
-  List of tag names. The list has to be in the form "tag1|tag2|..."
-  e. g. "head|script|style". An atomic tag is one whose child nodes should
-  not be compared - the entire tag should be treated as one token. This is
-  useful for tags where it does not make sense to insert <ins> and <del>
-  tags. If not used, this default list will be used:
-  "iframe|object|math|svg|script|video|head|style".`;
+  Comma separated list of tag names. The list has to be in the form
+  "tag1,tag2,..." e. g. "head,script,style". An atomic tag is one whose
+  child nodes should not be compared - the entire tag should be treated
+  as one token. This is useful for tags where it does not make sense to
+  insert <ins> and <del> tags. If not used, this default list will be used:
+  "iframe,object,math,svg,script,video,head,style".`;
     console.log(usage);
 }
 
