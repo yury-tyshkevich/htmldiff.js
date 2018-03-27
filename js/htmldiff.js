@@ -70,7 +70,7 @@
      */
     var atomicTagsRegExp;
     // Added head and style (for style tags inside the body)
-    var defaultAtomicTagsRegExp = new RegExp('^<(iframe|object|math|svg|script|video|head|style)');
+    var defaultAtomicTagsRegExp = new RegExp('^<(iframe,object,math,svg,script,video,head,style)');
     
     /**
      * Checks if the current word is the beginning of an atomic tag. An atomic tag is one whose
@@ -943,9 +943,9 @@
      * @param {string} className (Optional) The class attribute to include in <ins> and <del> tags.
      * @param {string} dataPrefix (Optional) The data prefix to use for data attributes. The
      *      operation index data attribute will be named `data-${dataPrefix-}operation-index`.
-     * @param {string} atomicTags (Optional) List of atomic tag names. The list has to be in the 
-     *     form 'tag1|tag2|tag3|...' e. g. 'head|script|style|...'. If not used, the default list 
-     *     'iframe|object|math|svg|script|video|head|style' will be used.
+     * @param {string} atomicTags (Optional) Comma separated list of atomic tag names. The 
+     *     list has to be in the form `tag1,tag2,...` e. g. `head,script,style`. If not used, 
+     *     the default list `iframe,object,math,svg,script,video,head,style` will be used.
      *
      * @return {string} The combined HTML content with differences wrapped in <ins> and <del> tags.
      */
@@ -953,7 +953,9 @@
         if (before === after) return before;
 
         // Enable user provided atomic tag list.
-        atomicTags ? (atomicTagsRegExp = new RegExp('^<(' + atomicTags + ')')) : (atomicTagsRegExp = defaultAtomicTagsRegExp);
+        atomicTags ? 
+            (atomicTagsRegExp = new RegExp('^<(' + atomicTags.replace(/\s*/g, "").trim() + ')'))
+            : (atomicTagsRegExp = defaultAtomicTagsRegExp);
 
         before = htmlToTokens(before);
         after = htmlToTokens(after);

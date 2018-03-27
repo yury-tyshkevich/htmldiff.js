@@ -59,12 +59,13 @@ of these three parameters it will be ignored:
 - `dataPrefix` (string) The data prefix to use for data attributes. The so called *operation 
   index data attribute* will be named `data-${dataPrefix-}operation-index`. If not used, 
   the default attribute name `data-operation-index` will be added on every inserted 
-  `<ins>` and `<del>` tag. The value of this attribute is an auto incremented counter.
-- `atomicTags` (string) A list of tag names. The list has to be in the form `tag1|tag2|...`
-  e. g. `head|script|style`. An atomic tag is one whose child nodes should not be 
-  compared - the entire tag should be treated as one token. This is useful for tags where 
-  it does not make sense to insert `<ins>`  and `<del>` tags. If not used, this default 
-  list will be used: `iframe|object|math|svg|script|video|head|style`.
+  `<ins>` and `<del>` tag. The value of this attribute is an auto incremented counter. 
+- `atomicTags` (string) Comma separated list of tag names. The list has to be in the form 
+  `tag1,tag2,...` e. g. `head,script,style`. An atomic tag is one whose child nodes should 
+  not be compared - the entire tag should be treated as one token. This is useful for tags 
+  where it does not make sense to insert `<ins>` and `<del>` tags. If not used, the default 
+  list will be used:
+  `iframe,object,math,svg,script,video,head,style`.
 
 
 ### Example
@@ -98,7 +99,7 @@ Result:
 ## Command line interface
 
 ```bash
-htmldiff beforeFile afterFile diffedFile [Options]
+htmldiff beforeFile afterFile diffedFile [-c className] [-p dataPrefix] [-t atomicTags]
 ```
 
 Parameters: 
@@ -114,21 +115,8 @@ Parameters:
 
 Options:
 
-- `-c` `className` (optional): className will be added as a class attribute 
-  on every `<ins>` and `<del>` tag.
-
-- `-p` `dataPrefix` (optional): The data prefix to use for data attributes. 
-  The operation index data attribute will be named 
-  `data-${dataPrefix-}operation-index`. If not used, the default attribute 
-  name `data-operation-index` will be added on every `<ins>` and `<del>` tag. 
-  The value of this attribute is an auto incremented counter.
-
-- `-t` `atomicTags` (optional): List of tag names. The list has to be in the 
-  form `tag1|tag2|...` e. g. `head|script|style`. An atomic tag is one whose 
-  child nodes should not be compared - the entire tag should be treated as 
-  one token. This is useful for tags where it does not make sense to insert 
-  `<ins>` and `<del>` tags. If not used, this default list will be used:
-  `iframe|object|math|svg|script|video|head|style`.
+`-c className`, `-p dataPrefix` and `-t atomicTags` are all optional. For a
+description please see API documentation above.
 
 
 ## Development
