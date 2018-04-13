@@ -20,7 +20,7 @@ let atomicTags: string | null = null;
  */
 function printUsage(): void {
     const usage: string =
-`${cli} v0.9.0
+`${cli} v0.9.3
 
 Usage: ${cli} beforeFile afterFile diffedFile [Options]
 
