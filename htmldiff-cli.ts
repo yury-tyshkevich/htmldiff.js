@@ -2,7 +2,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import { parse, resolve } from "path";
-import diffHTML = require("./js/htmldiff");
+import diffHTML from "./js/htmldiff";
 
 // Argument count.
 const argc: number = process.argv.length;
