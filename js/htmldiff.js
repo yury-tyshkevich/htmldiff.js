@@ -231,7 +231,7 @@
                         }
                         currentWord = char;
                         mode = 'whitespace';
-                    } else if (/[\wа-я\d\#@]/.test(char)){
+                    } else if (/[\wа-я\d\#@]/i.test(char)){
                         currentWord += char;
                     } else if (/&/.test(char)){
                         if (currentWord){
